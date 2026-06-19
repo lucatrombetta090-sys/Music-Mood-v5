@@ -1,0 +1,12 @@
+buildscript {
+    ext {
+        kotlin_version = '1.9.22'
+        agp_version    = '8.2.2'
+        chaquopy_ver   = '15.0.1'
+    }
+}
+plugins {
+    id 'com.android.application' version "$agp_version" apply false
+    id 'org.jetbrains.kotlin.android' version "$kotlin_version" apply false
+    id 'com.chaquo.python' version "$chaquopy_ver" apply false
+}
