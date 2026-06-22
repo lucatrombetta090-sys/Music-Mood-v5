@@ -1,4 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Music-Mood</string>
+
+    <string name="welcome_title">🎵 Music-Mood v5</string>
+    <string name="welcome_subtitle">Motore di analisi mood on‑device</string>
+
+    <string name="engine_status_idle">Motore Python: in attesa</string>
+    <string name="engine_status_loading">⏳ Inizializzazione Chaquopy…</string>
+    <string name="engine_status_ready">✅ Motore Python pronto</string>
+    <string name="engine_status_error">❌ Errore inizializzazione</string>
+
+    <string name="btn_run_test">Esegui test analisi mood</string>
+    <string name="btn_running">⏳ Analisi in corso…</string>
+
+    <string name="result_placeholder">Premi il pulsante per analizzare un segnale audio di test (tono 880 Hz + click 120 BPM).</string>
+
+    <string name="label_mood">Mood</string>
+    <string name="label_confidence">Confidenza</string>
+    <string name="label_valence">Valenza</string>
+    <string name="label_arousal">Arousal</string>
+    <string name="label_tempo">Tempo</string>
+    <string name="label_key">Tonalità</string>
 </resources>
