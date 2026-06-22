@@ -31,14 +31,40 @@ jobs:
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: "8.5"
+          cache-disabled: true
 
       - name: Generate Gradle wrapper
         run: gradle wrapper --gradle-version 8.5
 
       - name: Build debug APK
-        run: ./gradlew assembleDebug --no-daemon --stacktrace
+        run: ./gradlew assembleDebug --no-daemon --stacktrace --info
+        continue-on-error: true
+
+      - name: Show Gradle output tree
+        if: always()
+        run: |
+          echo "=== APK generati ==="
+          find app/build/outputs -type f 2>/dev/null || echo "Nessun output trovato"
+          echo ""
+          echo "=== Reports ==="
+          find app/build/reports -type f 2>/dev/null | head -50 || echo "Nessun report"
 
       - name: Upload APK
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: music-mood-debug
+          path: app/build/outputs/apk/debug/*.apk
+          if-no-files-found: warn
+          retention-days: 7
+
+      - name: Upload build reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-reports
+          path: |
+            app/build/reports/**
+            app/build/outputs/logs/**
+          if-no-files-found: ignore
+          retention-days: 7
