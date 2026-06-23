@@ -17,8 +17,8 @@
             android:id="@+id/emptyState"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:gravity="center"
+            android:orientation="vertical"
             android:padding="32dp"
             android:visibility="gone">
 
@@ -43,8 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:textAppearance="?attr/textAppearanceTitleMedium"
-            android:textStyle="bold"
-            tools:ignore="MissingDefaultResource" />
+            android:textStyle="bold" />
 
         <!-- Distribuzione mood -->
         <com.google.android.material.card.MaterialCardView
@@ -109,12 +108,14 @@
                         android:layout_weight="1"
                         android:gravity="center"
                         android:orientation="vertical">
+
                         <TextView
                             android:id="@+id/avgBpmText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textAppearance="?attr/textAppearanceHeadlineSmall"
                             android:textStyle="bold" />
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -128,12 +129,14 @@
                         android:layout_weight="1"
                         android:gravity="center"
                         android:orientation="vertical">
+
                         <TextView
                             android:id="@+id/avgValenceText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textAppearance="?attr/textAppearanceHeadlineSmall"
                             android:textStyle="bold" />
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -147,12 +150,14 @@
                         android:layout_weight="1"
                         android:gravity="center"
                         android:orientation="vertical">
+
                         <TextView
                             android:id="@+id/avgArousalText"
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:textAppearance="?attr/textAppearanceHeadlineSmall"
                             android:textStyle="bold" />
+
                         <TextView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
@@ -173,6 +178,7 @@
                     android:text="@string/stats_top_key"
                     android:textAppearance="?attr/textAppearanceLabelSmall"
                     android:textColor="?android:attr/textColorSecondary" />
+
                 <TextView
                     android:id="@+id/topKeyText"
                     android:layout_width="match_parent"
@@ -187,6 +193,7 @@
                     android:text="@string/stats_top_artists"
                     android:textAppearance="?attr/textAppearanceLabelSmall"
                     android:textColor="?android:attr/textColorSecondary" />
+
                 <TextView
                     android:id="@+id/topArtistsText"
                     android:layout_width="match_parent"
