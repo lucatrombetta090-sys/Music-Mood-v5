@@ -10,6 +10,7 @@ import com.musicmood.audio.AudioDecoder
 import com.musicmood.data.MoodRepository
 import com.musicmood.data.Song
 import com.musicmood.data.withMood
+import com.musicmood.player.PlayerController
 import com.musicmood.worker.MoodAnalysisWorker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
@@ -32,10 +33,11 @@ sealed interface AnalysisUiState {
 
 class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
-    private val mediaRepo = MediaStoreRepository(app)
-    private val moodRepo  = MoodRepository.get(app)
-    private val decoder   = AudioDecoder(app)
+    private val mediaRepo   = MediaStoreRepository(app)
+    private val moodRepo    = MoodRepository.get(app)
+    private val decoder     = AudioDecoder(app)
     private val workManager = WorkManager.getInstance(app)
+    private val player      = PlayerController.get(app)
 
     private val _library = MutableStateFlow<LibraryUiState>(LibraryUiState.Idle)
     val library: StateFlow<LibraryUiState> = _library.asStateFlow()
@@ -50,12 +52,15 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     val analyzedCount: StateFlow<Int> = moodRepo.observeCount()
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
-    /** Stato del job WorkManager. */
+    /** Stato del job WorkManager (LiveData per compatibilità con observe). */
     val batchWorkInfo = workManager
         .getWorkInfosForUniqueWorkLiveData(MoodAnalysisWorker.WORK_NAME)
 
     private var rawSongs: List<Song> = emptyList()
 
+    // ──────────────────────────────────────────────────────────────────────
+    // Caricamento libreria
+    // ──────────────────────────────────────────────────────────────────────
     fun loadLibrary() {
         if (_library.value is LibraryUiState.Loading) return
         viewModelScope.launch {
@@ -86,17 +91,15 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         _selectedMood.value = mood
         val current = _library.value
         if (current is LibraryUiState.Loaded) {
-            val all = rawSongs.map { song ->
-                val cached = current.songs.firstOrNull { it.id == song.id }
-                cached ?: song
-            }
             _library.value = LibraryUiState.Loaded(applyFilter(
                 rawSongs.map { raw -> current.songs.find { it.id == raw.id } ?: raw }
             ))
         }
     }
 
-    /** Analisi singola "on-tap" (cache-aware). */
+    // ──────────────────────────────────────────────────────────────────────
+    // Analisi singola "on-tap" (cache-aware)
+    // ──────────────────────────────────────────────────────────────────────
     fun analyze(song: Song) {
         viewModelScope.launch {
             _analysis.value = AnalysisUiState.Running(song)
@@ -123,8 +126,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             val result = withContext(Dispatchers.Default) {
                 runCatching {
                     val pcm = decoder.decodeWindow(
-                        uri = song.uri,
-                        startMs = (song.durationMs / 2).coerceAtLeast(0),
+                        uri        = song.uri,
+                        startMs    = (song.durationMs / 2).coerceAtLeast(0),
                         durationMs = 30_000L,
                     )
                     val py = Python.getInstance()
@@ -151,7 +154,18 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Avvia (o riprende) l'analisi batch di tutta la libreria. */
+    fun resetAnalysisState() { _analysis.value = AnalysisUiState.Idle }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Riproduzione (Step 3 — Media3)
+    // ──────────────────────────────────────────────────────────────────────
+    fun playSong(song: Song, queue: List<Song>) {
+        player.playSong(song, queue)
+    }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Analisi batch (Step 2 — WorkManager)
+    // ──────────────────────────────────────────────────────────────────────
     fun startBatchAnalysis() {
         val request = OneTimeWorkRequestBuilder<MoodAnalysisWorker>()
             .setConstraints(
@@ -173,11 +187,5 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     fun clearAllAnalysis() {
         viewModelScope.launch { moodRepo.clearAll() }
-    }
-
-    fun resetAnalysisState() { _analysis.value = AnalysisUiState.Idle }
-    fun playSong(song: Song, queue: List<Song>) {
-        com.musicmood.player.PlayerController.get(getApplication())
-            .playSong(song, queue)
     }
 }
