@@ -165,7 +165,12 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         }
     }
 
-    private fun onSongClicked(song: Song) { vm.analyze(song) }
+    private fun onSongClicked(song: Song) {
+        // Tap singolo → riproduci.
+        // Long-press → analizza (vedi sotto).
+        val currentList = (vm.library.value as? LibraryUiState.Loaded)?.songs ?: emptyList()
+        vm.playSong(song, currentList)
+    }
 
     private fun onBatchClicked() {
         val info = vm.batchWorkInfo.value?.firstOrNull()
