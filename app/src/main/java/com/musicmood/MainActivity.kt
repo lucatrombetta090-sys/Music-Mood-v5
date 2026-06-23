@@ -19,6 +19,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.musicmood.bubblemap.BubbleMapFragment
 import com.musicmood.library.LibraryFragment
 import com.musicmood.player.MiniPlayerView
+import com.musicmood.stats.StatsFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -54,7 +55,6 @@ class MainActivity : AppCompatActivity() {
 
         btnGrantPermissions.setOnClickListener { requestAllPermissions() }
 
-        // Mini-player auto-osserva PlayerController
         findViewById<MiniPlayerView>(R.id.miniPlayer).observe(this)
 
         initializePython()
@@ -108,15 +108,15 @@ class MainActivity : AppCompatActivity() {
         setupPanel.visibility = View.GONE
         bottomNav.visibility = View.VISIBLE
 
-        // Fragment iniziale = Library
         if (supportFragmentManager.findFragmentById(R.id.fragmentContainer) == null) {
             swapFragment(LibraryFragment())
         }
 
         bottomNav.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                R.id.nav_library   -> { swapFragment(LibraryFragment()); true }
+                R.id.nav_library   -> { swapFragment(LibraryFragment());   true }
                 R.id.nav_bubblemap -> { swapFragment(BubbleMapFragment()); true }
+                R.id.nav_stats     -> { swapFragment(StatsFragment());     true }
                 else               -> false
             }
         }
