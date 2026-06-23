@@ -47,6 +47,11 @@ class MainActivity : AppCompatActivity() {
         setupPanel          = findViewById(R.id.setupPanel)
 
         btnGrantPermissions.setOnClickListener { requestAllPermissions() }
+
+        // Mini-player auto-osserva PlayerController
+        findViewById<com.musicmood.player.MiniPlayerView>(R.id.miniPlayer)
+            .observe(this)
+
         initializePython()
     }
 
