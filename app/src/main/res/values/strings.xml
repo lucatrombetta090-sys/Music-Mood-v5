@@ -17,4 +17,8 @@
 
     <!-- Libreria -->
     <string name="library_empty">Nessun brano trovato nella libreria locale.</string>
+    <string name="batch_start">Analizza tutto</string>
+    <string name="batch_stop">Annulla analisi</string>
+    <string name="batch_started">Analisi batch avviata in background</string>
+    <string name="batch_cancelled">Analisi batch annullata</string>
 </resources>
