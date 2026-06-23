@@ -14,6 +14,7 @@ import com.musicmood.data.Song
 
 class SongAdapter(
     private val onClick: (Song) -> Unit,
+    private val onLongClick: (Song) -> Unit,
 ) : ListAdapter<Song, SongAdapter.VH>(DIFF) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): VH {
@@ -53,6 +54,10 @@ class SongAdapter(
                 .into(art)
 
             itemView.setOnClickListener { onClick(s) }
+            itemView.setOnLongClickListener {
+                onLongClick(s)
+                true
+            }
         }
     }
 
