@@ -19,6 +19,7 @@ import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.musicmood.bubblemap.BubbleMapFragment
 import com.musicmood.library.LibraryFragment
 import com.musicmood.player.MiniPlayerView
+import com.musicmood.profile.ProfileFragment
 import com.musicmood.stats.StatsFragment
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -117,6 +118,7 @@ class MainActivity : AppCompatActivity() {
                 R.id.nav_library   -> { swapFragment(LibraryFragment());   true }
                 R.id.nav_bubblemap -> { swapFragment(BubbleMapFragment()); true }
                 R.id.nav_stats     -> { swapFragment(StatsFragment());     true }
+                R.id.nav_profile   -> { swapFragment(ProfileFragment());   true }
                 else               -> false
             }
         }
