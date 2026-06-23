@@ -24,4 +24,8 @@
 
     <string name="unknown_title">Sconosciuto</string>
     <string name="unknown_artist">Sconosciuto</string>
+
+    <string name="nav_library">Libreria</string>
+    <string name="nav_bubblemap">BubbleMap</string>
+    <string name="bubblemap_empty">Analizza la libreria per popolare la mappa.\nLong-press su un brano per analizzarlo subito.</string>
 </resources>
