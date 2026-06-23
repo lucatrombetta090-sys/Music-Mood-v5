@@ -21,4 +21,7 @@
     <string name="batch_stop">Annulla analisi</string>
     <string name="batch_started">Analisi batch avviata in background</string>
     <string name="batch_cancelled">Analisi batch annullata</string>
+
+    <string name="unknown_title">Sconosciuto</string>
+    <string name="unknown_artist">Sconosciuto</string>
 </resources>
