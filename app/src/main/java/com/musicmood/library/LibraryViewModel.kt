@@ -176,4 +176,8 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun resetAnalysisState() { _analysis.value = AnalysisUiState.Idle }
+    fun playSong(song: Song, queue: List<Song>) {
+        com.musicmood.player.PlayerController.get(getApplication())
+            .playSong(song, queue)
+    }
 }
