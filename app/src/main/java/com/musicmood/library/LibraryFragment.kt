@@ -12,7 +12,6 @@ import androidx.lifecycle.repeatOnLifecycle
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.work.WorkInfo
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
@@ -47,7 +46,10 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         chipGroup  = view.findViewById(R.id.chipGroup)
         fabBatch   = view.findViewById(R.id.fabBatch)
 
-        adapter = SongAdapter(onClick = ::onSongClicked)
+        adapter = SongAdapter(
+            onClick     = ::onSongClicked,
+            onLongClick = ::onSongLongClicked,
+        )
 
         view.findViewById<RecyclerView>(R.id.recyclerView).apply {
             layoutManager = LinearLayoutManager(requireContext())
@@ -69,15 +71,16 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         }
 
         vm.batchWorkInfo.observe(viewLifecycleOwner) { infos ->
-            val info = infos?.firstOrNull()
-            updateBatchUi(info?.state)
+            updateBatchUi(infos?.firstOrNull()?.state)
         }
     }
 
+    // ──────────────────────────────────────────────────────────────────────
+    // Chips filtro mood
+    // ──────────────────────────────────────────────────────────────────────
     private fun buildChips() {
         chipGroup.removeAllViews()
 
-        // Chip "Tutti"
         val allChip = Chip(requireContext()).apply {
             text = "Tutti"
             isCheckable = true
@@ -98,6 +101,9 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         }
     }
 
+    // ──────────────────────────────────────────────────────────────────────
+    // Observers
+    // ──────────────────────────────────────────────────────────────────────
     private suspend fun observeLibrary() {
         vm.library.collect { state ->
             when (state) {
@@ -165,11 +171,21 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         }
     }
 
+    // ──────────────────────────────────────────────────────────────────────
+    // Interazioni con i brani
+    // ──────────────────────────────────────────────────────────────────────
+    /** Tap singolo → avvia la riproduzione del brano usando la lista corrente come coda. */
     private fun onSongClicked(song: Song) {
-        // Tap singolo → riproduci.
-        // Long-press → analizza (vedi sotto).
-        val currentList = (vm.library.value as? LibraryUiState.Loaded)?.songs ?: emptyList()
+        val currentList = (vm.library.value as? LibraryUiState.Loaded)?.songs ?: listOf(song)
         vm.playSong(song, currentList)
+        Snackbar.make(requireView(),
+            "▶ ${song.title}",
+            Snackbar.LENGTH_SHORT).show()
+    }
+
+    /** Long-press → analizza il brano (cache-aware via Room). */
+    private fun onSongLongClicked(song: Song) {
+        vm.analyze(song)
     }
 
     private fun onBatchClicked() {
@@ -201,8 +217,8 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
             .setTitle("🎯 ${song.title}")
             .setMessage(body)
             .setPositiveButton("Chiudi", null)
-            .setNeutralButton("Rianalizza") { _, _ ->
-                vm.clearAllAnalysis()  // reset solo se vuoi rifare tutto
+            .setNeutralButton("Riproduci") { _, _ ->
+                onSongClicked(song)
             }
             .show()
     }
