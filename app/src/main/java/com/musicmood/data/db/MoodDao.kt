@@ -1,6 +1,9 @@
 package com.musicmood.data.db
 
-import androidx.room.*
+import androidx.room.Dao
+import androidx.room.Insert
+import androidx.room.OnConflictStrategy
+import androidx.room.Query
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -9,16 +12,16 @@ interface MoodDao {
     @Query("SELECT * FROM mood_analysis")
     fun observeAll(): Flow<List<MoodEntity>>
 
-    @Query("SELECT * FROM mood_analysis WHERE songId = :songId LIMIT 1")
+    @Query("SELECT * FROM mood_analysis WHERE song_id = :songId LIMIT 1")
     suspend fun findById(songId: Long): MoodEntity?
 
-    @Query("SELECT songId FROM mood_analysis")
+    @Query("SELECT song_id FROM mood_analysis")
     suspend fun getAnalyzedIds(): List<Long>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: MoodEntity)
 
-    @Query("DELETE FROM mood_analysis WHERE songId = :songId")
+    @Query("DELETE FROM mood_analysis WHERE song_id = :songId")
     suspend fun delete(songId: Long)
 
     @Query("DELETE FROM mood_analysis")
