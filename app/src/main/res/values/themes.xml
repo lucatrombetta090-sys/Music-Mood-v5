@@ -6,4 +6,9 @@
         <item name="android:statusBarColor">@color/brand_primary</item>
         <item name="android:windowLightStatusBar">false</item>
     </style>
+
+    <style name="ShapeAppearanceOverlay.MusicMood.Cover" parent="">
+        <item name="cornerFamily">rounded</item>
+        <item name="cornerSize">10dp</item>
+    </style>
 </resources>
