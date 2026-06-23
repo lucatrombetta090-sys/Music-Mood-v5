@@ -15,18 +15,21 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun moodDao(): MoodDao
 
     companion object {
-        @Volatile private var INSTANCE: AppDatabase? = null
+        @Volatile
+        private var INSTANCE: AppDatabase? = null
 
-        fun get(context: Context): AppDatabase =
-            INSTANCE ?: synchronized(this) {
-                INSTANCE ?: Room.databaseBuilder(
+        fun get(context: Context): AppDatabase {
+            return INSTANCE ?: synchronized(this) {
+                val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
                     "musicmood.db"
                 )
-                .fallbackToDestructiveMigration()
-                .build()
-                .also { INSTANCE = it }
+                    .fallbackToDestructiveMigration()
+                    .build()
+                INSTANCE = instance
+                instance
             }
+        }
     }
 }
