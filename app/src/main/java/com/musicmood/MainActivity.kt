@@ -25,16 +25,17 @@ class MainActivity : AppCompatActivity() {
     private lateinit var btnGrantPermissions: Button
     private lateinit var setupPanel: LinearLayout
 
-    private val requiredPermission: String
+    private val audioPermission: String
         get() = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU)
             Manifest.permission.READ_MEDIA_AUDIO
         else
             Manifest.permission.READ_EXTERNAL_STORAGE
 
-    private val permissionLauncher = registerForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (granted) onPermissionGranted() else showSetupPanel()
+    private val multiPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { results ->
+        val audioGranted = results[audioPermission] == true
+        if (audioGranted) onPermissionGranted() else showSetupPanel()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,11 +46,16 @@ class MainActivity : AppCompatActivity() {
         btnGrantPermissions = findViewById(R.id.btnGrantPermissions)
         setupPanel          = findViewById(R.id.setupPanel)
 
-        btnGrantPermissions.setOnClickListener {
-            permissionLauncher.launch(requiredPermission)
-        }
-
+        btnGrantPermissions.setOnClickListener { requestAllPermissions() }
         initializePython()
+    }
+
+    private fun requestAllPermissions() {
+        val toRequest = mutableListOf(audioPermission)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            toRequest += Manifest.permission.POST_NOTIFICATIONS
+        }
+        multiPermissionLauncher.launch(toRequest.toTypedArray())
     }
 
     private fun initializePython() {
@@ -77,20 +83,16 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun checkPermissionsAndProceed() {
-        val granted = ContextCompat.checkSelfPermission(
-            this, requiredPermission
+        val audioOk = ContextCompat.checkSelfPermission(
+            this, audioPermission
         ) == PackageManager.PERMISSION_GRANTED
-        if (granted) onPermissionGranted()
-        else showSetupPanel()
+        if (audioOk) onPermissionGranted() else showSetupPanel()
     }
 
-    private fun showSetupPanel() {
-        setupPanel.visibility = View.VISIBLE
-    }
+    private fun showSetupPanel() { setupPanel.visibility = View.VISIBLE }
 
     private fun onPermissionGranted() {
         setupPanel.visibility = View.GONE
-        // Carica il LibraryFragment una sola volta
         if (supportFragmentManager.findFragmentById(R.id.fragmentContainer) == null) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.fragmentContainer, LibraryFragment())
