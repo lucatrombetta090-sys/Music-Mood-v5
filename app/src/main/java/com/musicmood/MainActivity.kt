@@ -96,12 +96,32 @@ class MainActivity : AppCompatActivity() {
 
     private fun showSetupPanel() { setupPanel.visibility = View.VISIBLE }
 
-    private fun onPermissionGranted() {
+   private fun onPermissionGranted() {
         setupPanel.visibility = View.GONE
+
+        val bottomNav = findViewById<com.google.android.material.bottomnavigation
+            .BottomNavigationView>(R.id.bottomNav)
+        bottomNav.visibility = View.VISIBLE
+
+        // Fragment iniziale = Library
         if (supportFragmentManager.findFragmentById(R.id.fragmentContainer) == null) {
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.fragmentContainer, LibraryFragment())
-                .commit()
+            swapFragment(com.musicmood.library.LibraryFragment())
         }
+
+        bottomNav.setOnItemSelectedListener { item ->
+            when (item.itemId) {
+                R.id.nav_library   -> swapFragment(com.musicmood.library.LibraryFragment())
+                R.id.nav_bubblemap -> swapFragment(com.musicmood.bubblemap.BubbleMapFragment())
+                else -> false
+            }
+            true
+        }
+    }
+
+    private fun swapFragment(fragment: androidx.fragment.app.Fragment) {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.fragmentContainer, fragment)
+            .commit()
+    }
     }
 }
