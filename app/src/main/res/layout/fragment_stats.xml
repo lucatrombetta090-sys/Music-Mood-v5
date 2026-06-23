@@ -12,7 +12,6 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- Empty state -->
         <LinearLayout
             android:id="@+id/emptyState"
             android:layout_width="match_parent"
@@ -37,7 +36,6 @@
                 android:textColor="?android:attr/textColorSecondary" />
         </LinearLayout>
 
-        <!-- Totale -->
         <TextView
             android:id="@+id/totalText"
             android:layout_width="match_parent"
@@ -45,7 +43,6 @@
             android:textAppearance="?attr/textAppearanceTitleMedium"
             android:textStyle="bold" />
 
-        <!-- Distribuzione mood -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -74,7 +71,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Metriche aggregate -->
         <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -202,7 +198,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- Playlist automatiche -->
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -218,7 +213,6 @@
             android:layout_height="wrap_content"
             android:orientation="vertical" />
 
-        <!-- Export -->
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnExport"
             android:layout_width="match_parent"
