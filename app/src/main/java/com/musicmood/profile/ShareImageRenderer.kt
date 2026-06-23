@@ -1,0 +1,201 @@
+package com.musicmood.profile
+
+import android.content.Context
+import android.graphics.*
+import android.graphics.drawable.GradientDrawable
+import androidx.core.content.FileProvider
+import java.io.File
+import java.io.FileOutputStream
+
+/**
+ * Genera un PNG 1080×1920 (Instagram Story) con il profilo musicale dell'utente
+ * e lo espone via FileProvider per la condivisione esterna.
+ */
+class ShareImageRenderer(private val context: Context) {
+
+    data class Profile(
+        val archetype: Archetype,
+        val topMoods: List<Triple<String, Int, Int>>, // (mood, pct, color)
+        val totalAnalyzed: Int,
+        val topArtist: String?,
+    )
+
+    fun renderAndShare(profile: Profile): android.net.Uri? {
+        val bitmap = renderBitmap(profile)
+        return saveAndExpose(bitmap)
+    }
+
+    private fun renderBitmap(p: Profile): Bitmap {
+        val w = 1080
+        val h = 1920
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val c = Canvas(bmp)
+
+        // ─── Sfondo gradient verticale ───
+        drawGradient(c, w, h, p.archetype.color)
+
+        // ─── Decorazioni soft top ───
+        val decor = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x33FFFFFF; style = Paint.Style.FILL
+        }
+        c.drawCircle(w * 0.85f, h * 0.08f, 220f, decor)
+        c.drawCircle(w * 0.15f, h * 0.25f, 140f, decor)
+
+        // ─── Title ───
+        val titlePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 56f
+            isFakeBoldText = true
+            textAlign = Paint.Align.CENTER
+        }
+        c.drawText("MUSIC PERSONALITY", w / 2f, 220f, titlePaint)
+
+        // ─── Emoji grande ───
+        val emojiPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            textSize = 280f
+            textAlign = Paint.Align.CENTER
+        }
+        c.drawText(p.archetype.emoji, w / 2f, 540f, emojiPaint)
+
+        // ─── Nome archetipo ───
+        val namePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 96f
+            isFakeBoldText = true
+            textAlign = Paint.Align.CENTER
+        }
+        c.drawText(p.archetype.name, w / 2f, 720f, namePaint)
+
+        // ─── Tagline (multi-riga se serve) ───
+        val taglinePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xCCFFFFFF.toInt()
+            textSize = 42f
+            textAlign = Paint.Align.CENTER
+        }
+        drawWrappedText(c, p.archetype.tagline, w / 2f, 820f, w - 200f, taglinePaint, 50f)
+
+        // ─── Box con i top mood ───
+        val boxTop = 1080f
+        val boxBottom = 1640f
+        val boxBg = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x33FFFFFF; style = Paint.Style.FILL
+        }
+        val boxRect = RectF(80f, boxTop, w - 80f, boxBottom)
+        c.drawRoundRect(boxRect, 40f, 40f, boxBg)
+
+        val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 38f
+            isFakeBoldText = true
+        }
+        val pctPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = Color.WHITE
+            textSize = 38f
+            isFakeBoldText = true
+            textAlign = Paint.Align.RIGHT
+        }
+        val barBgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x33000000; style = Paint.Style.FILL
+        }
+        val barFgPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            style = Paint.Style.FILL
+        }
+
+        val rowTop = boxTop + 70f
+        val rowHeight = 110f
+        p.topMoods.take(4).forEachIndexed { i, (mood, pct, color) ->
+            val y = rowTop + i * rowHeight
+            c.drawText(mood, 130f, y + 12f, labelPaint)
+            c.drawText("$pct%", w - 130f, y + 12f, pctPaint)
+            // Barra
+            val barTop = y + 32f
+            val barBottom = barTop + 18f
+            c.drawRoundRect(130f, barTop, w - 130f, barBottom, 10f, 10f, barBgPaint)
+            val barEnd = 130f + (w - 260f) * (pct / 100f)
+            barFgPaint.color = color
+            c.drawRoundRect(130f, barTop, barEnd, barBottom, 10f, 10f, barFgPaint)
+        }
+
+        // ─── Stat di fondo ───
+        val statPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0xCCFFFFFF.toInt()
+            textSize = 34f
+            textAlign = Paint.Align.CENTER
+        }
+        c.drawText(
+            "Basato su ${p.totalAnalyzed} brani analizzati",
+            w / 2f, 1730f, statPaint
+        )
+        if (!p.topArtist.isNullOrBlank()) {
+            c.drawText("Top artist: ${p.topArtist}", w / 2f, 1780f, statPaint)
+        }
+
+        // ─── Watermark ───
+        val watermarkPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = 0x99FFFFFF.toInt()
+            textSize = 28f
+            textAlign = Paint.Align.CENTER
+            isFakeBoldText = true
+        }
+        c.drawText("Generated by Music-Mood", w / 2f, 1870f, watermarkPaint)
+
+        return bmp
+    }
+
+    private fun drawGradient(c: Canvas, w: Int, h: Int, color: Int) {
+        val darker = darken(color, 0.6f)
+        val gradient = GradientDrawable(
+            GradientDrawable.Orientation.TOP_BOTTOM,
+            intArrayOf(color, darker),
+        ).apply { setBounds(0, 0, w, h) }
+        gradient.draw(c)
+    }
+
+    private fun darken(color: Int, factor: Float): Int {
+        val r = (Color.red(color)   * factor).toInt().coerceIn(0, 255)
+        val g = (Color.green(color) * factor).toInt().coerceIn(0, 255)
+        val b = (Color.blue(color)  * factor).toInt().coerceIn(0, 255)
+        return Color.rgb(r, g, b)
+    }
+
+    private fun drawWrappedText(
+        c: Canvas, text: String,
+        cx: Float, startY: Float, maxWidth: Float,
+        paint: Paint, lineHeight: Float,
+    ) {
+        val words = text.split(" ")
+        val lines = mutableListOf<String>()
+        var current = ""
+        for (w in words) {
+            val test = if (current.isEmpty()) w else "$current $w"
+            if (paint.measureText(test) <= maxWidth) {
+                current = test
+            } else {
+                if (current.isNotEmpty()) lines += current
+                current = w
+            }
+        }
+        if (current.isNotEmpty()) lines += current
+        lines.forEachIndexed { i, line ->
+            c.drawText(line, cx, startY + i * lineHeight, paint)
+        }
+    }
+
+    private fun saveAndExpose(bmp: Bitmap): android.net.Uri? {
+        return try {
+            val dir = File(context.cacheDir, "shared_images").apply { mkdirs() }
+            val file = File(dir, "music_mood_profile.png")
+            FileOutputStream(file).use { out ->
+                bmp.compress(Bitmap.CompressFormat.PNG, 100, out)
+            }
+            FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                file,
+            )
+        } catch (e: Exception) {
+            e.printStackTrace()
+            null
+        }
+    }
+}
