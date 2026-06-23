@@ -10,15 +10,11 @@
     <string name="engine_status_ready">✅ Motore Python pronto</string>
     <string name="engine_status_error">❌ Errore inizializzazione</string>
 
-    <string name="btn_run_test">Esegui test analisi mood</string>
-    <string name="btn_running">⏳ Analisi in corso…</string>
+    <!-- Permessi -->
+    <string name="permission_title">Permessi audio richiesti</string>
+    <string name="permission_body">Per leggere e analizzare la tua libreria musicale locale.</string>
+    <string name="permission_grant">Concedi accesso</string>
 
-    <string name="result_placeholder">Premi il pulsante per analizzare un segnale audio di test (tono 880 Hz + click 120 BPM).</string>
-
-    <string name="label_mood">Mood</string>
-    <string name="label_confidence">Confidenza</string>
-    <string name="label_valence">Valenza</string>
-    <string name="label_arousal">Arousal</string>
-    <string name="label_tempo">Tempo</string>
-    <string name="label_key">Tonalità</string>
+    <!-- Libreria -->
+    <string name="library_empty">Nessun brano trovato nella libreria locale.</string>
 </resources>
