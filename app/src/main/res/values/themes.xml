@@ -1,55 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <style name="Theme.MusicMood" parent="Theme.Material3.Dark.NoActionBar">
-        <item name="colorPrimary">@color/accent_purple</item>
-        <item name="colorOnPrimary">@color/text_primary</item>
-        <item name="colorPrimaryContainer">@color/dark_surface</item>
-        <item name="colorOnPrimaryContainer">@color/text_primary</item>
-
-        <item name="colorSecondary">@color/accent_pink</item>
-        <item name="colorOnSecondary">@color/text_primary</item>
-
-        <item name="colorBackground">@color/dark_bg_top</item>
-        <item name="colorSurface">@color/dark_surface</item>
-        <item name="colorSurfaceVariant">@color/dark_surface_variant</item>
-        <item name="colorOnSurface">@color/text_primary</item>
-        <item name="colorOnSurfaceVariant">@color/text_secondary</item>
-
-        <item name="colorOutline">@color/divider</item>
-        <item name="colorOutlineVariant">@color/divider</item>
-
-        <item name="android:windowBackground">@drawable/bg_gradient_dark</item>
+    <style name="Theme.MusicMood" parent="Theme.Material3.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/brand_primary</item>
+        <item name="colorOnPrimary">@color/brand_on_primary</item>
+        <item name="colorSecondary">@color/brand_secondary</item>
+        <item name="colorTertiary">@color/brand_accent</item>
+        <item name="android:windowBackground">@color/bg_dark_bottom</item>
         <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@color/dark_bg_bottom</item>
+        <item name="android:navigationBarColor">@color/bg_dark_bottom</item>
         <item name="android:windowLightStatusBar">false</item>
-
-        <item name="materialAlertDialogTheme">@style/MusicMood.AlertDialog</item>
-        <item name="bottomNavigationStyle">@style/MusicMood.BottomNav</item>
     </style>
-
-    <!-- Tema dialog -->
-    <style name="MusicMood.AlertDialog"
-        parent="ThemeOverlay.Material3.MaterialAlertDialog">
-        <item name="dialogCornerRadius">20dp</item>
-    </style>
-
-    <style name="ShapeAppearanceOverlay.MusicMood.Cover" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">10dp</item>
-    </style>
-
-    <style name="ShapeAppearanceOverlay.MusicMood.LargeCover" parent="">
-        <item name="cornerFamily">rounded</item>
-        <item name="cornerSize">24dp</item>
-    </style>
-
-    <!-- Tema FULLSCREEN per PlayerActivity -->
-    <style name="Theme.MusicMood.Player" parent="Theme.MusicMood">
-        <item name="android:windowBackground">@drawable/bg_player_gradient</item>
-        <item name="android:statusBarColor">@android:color/transparent</item>
-        <item name="android:navigationBarColor">@android:color/transparent</item>
-        <item name="android:windowTranslucentNavigation">false</item>
-    </style>
-
 </resources>
