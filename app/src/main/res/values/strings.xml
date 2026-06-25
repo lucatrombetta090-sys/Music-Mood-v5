@@ -100,4 +100,24 @@
 
     <!-- About -->
     <string name="about_message">Music-Mood v0.6.0\n\nAnalisi mood on-device tramite motore DSP v5 (MFCC, chroma, valenza/arousal).\n\nMade with ❤️ in Italy</string>
+
+    <!-- Drawer & Player (Fase 1) -->
+    <string name="nav_weekly">Weekly Report</string>
+    <string name="nav_settings">Impostazioni</string>
+    <string name="player_close">Chiudi</string>
+    <string name="player_now_playing">IN RIPRODUZIONE</string>
+    <string name="player_favorite">Preferito</string>
+
+    <!-- Settings -->
+    <string name="settings_calibration_title">🎯 Calibrazione</string>
+    <string name="settings_calibration_desc">Quanto la calibrazione personalizzata sposta i centroidi mood. 0 = niente shift, 1 = shift massimo.</string>
+    <string name="settings_analysis_title">⚙️ Analisi</string>
+    <string name="settings_auto_batch">Avvio automatico analisi</string>
+    <string name="settings_auto_batch_desc">All\'apertura dell\'app, avvia automaticamente l\'analisi dei brani non ancora classificati.</string>
+    <string name="settings_window_desc">Durata della finestra audio analizzata per ogni brano. Più lunga = più accurata, ma più lenta.</string>
+    <string name="settings_notifications_title">🔔 Notifiche</string>
+    <string name="settings_weekly_enabled">Weekly Mood Report</string>
+    <string name="settings_weekly_enabled_desc">Ricevi una notifica ogni lunedì mattina con il report della settimana passata.</string>
+    <string name="settings_about_title">ℹ️ Info</string>
+    <string name="settings_about_body">Music-Mood v5\n\nApp che analizza la tua libreria musicale e classifica i brani in 9 mood con motore DSP on-device (Python + Chaquopy).\n\nGenerated with ❤️ by lucatrombetta090-sys</string>
 </resources>
