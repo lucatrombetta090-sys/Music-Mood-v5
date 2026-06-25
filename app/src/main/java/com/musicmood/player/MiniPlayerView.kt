@@ -1,6 +1,7 @@
 package com.musicmood.player
 
 import android.content.Context
+import android.content.Intent
 import android.util.AttributeSet
 import android.view.LayoutInflater
 import android.view.View
@@ -9,15 +10,13 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
+import androidx.media3.common.util.UnstableApi
 import com.bumptech.glide.Glide
 import com.google.android.material.imageview.ShapeableImageView
 import com.musicmood.R
 import kotlinx.coroutines.launch
 
-/**
- * Mini-player persistente in fondo a MainActivity.
- * Si auto-osserva PlayerController.state e si nasconde se non c'è nulla.
- */
+@UnstableApi
 class MiniPlayerView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -45,6 +44,12 @@ class MiniPlayerView @JvmOverloads constructor(
         playPause.setOnClickListener { controller.toggle() }
         next.setOnClickListener { controller.next() }
         prev.setOnClickListener { controller.prev() }
+
+        // Tap → apre PlayerActivity full-screen
+        setOnClickListener {
+            context.startActivity(Intent(context, PlayerActivity::class.java))
+        }
+
         visibility = View.GONE
     }
 
