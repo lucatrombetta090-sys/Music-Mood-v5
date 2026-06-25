@@ -12,6 +12,9 @@ interface MoodDao {
     @Query("SELECT * FROM mood_analysis")
     fun observeAll(): Flow<List<MoodEntity>>
 
+    @Query("SELECT * FROM mood_analysis")
+    suspend fun getAllEntities(): List<MoodEntity>
+
     @Query("SELECT * FROM mood_analysis WHERE song_id = :songId LIMIT 1")
     suspend fun findById(songId: Long): MoodEntity?
 
