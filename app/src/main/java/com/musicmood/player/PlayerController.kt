@@ -6,45 +6,57 @@ import android.net.Uri
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
+import com.musicmood.data.db.AppDatabase
+import com.musicmood.data.db.ListeningEventEntity
 import com.musicmood.data.Song
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
-/**
- * Singleton che incapsula MediaController e lo espone come Flow per la UI.
- */
-class PlayerController private constructor(context: Context) {
+@UnstableApi
+class PlayerController private constructor(private val context: Context) {
 
     private var controller: MediaController? = null
+    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     private val _state = MutableStateFlow(PlaybackUiState())
     val state: StateFlow<PlaybackUiState> = _state.asStateFlow()
+
+    // Cache: mappa songId -> mood per loggare gli eventi
+    private val songMoodCache = mutableMapOf<Long, String>()
 
     init {
         val token = SessionToken(
             context.applicationContext,
             ComponentName(context.applicationContext, PlaybackService::class.java)
         )
-        MediaController.Builder(context.applicationContext, token).buildAsync()
-            .let { future ->
-                future.addListener({
-                    controller = future.get()
-                    attachListener()
-                    syncState()
-                }, MoreExecutors.directExecutor())
-            }
+        val future = MediaController.Builder(context.applicationContext, token).buildAsync()
+        future.addListener({
+            controller = future.get()
+            attachListener()
+            syncState()
+        }, MoreExecutors.directExecutor())
     }
 
     private fun attachListener() {
-        controller?.addListener(object : Player.Listener {
-            override fun onMediaItemTransition(item: MediaItem?, reason: Int) = syncState()
+        val listener = object : Player.Listener {
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                syncState()
+                // Logga l'evento se è una transizione "naturale" o "seek"
+                mediaItem?.let { logListeningEvent(it) }
+            }
             override fun onIsPlayingChanged(isPlaying: Boolean) = syncState()
             override fun onPlaybackStateChanged(playbackState: Int) = syncState()
-        })
+        }
+        controller?.addListener(listener)
     }
 
     private fun syncState() {
@@ -59,13 +71,37 @@ class PlayerController private constructor(context: Context) {
         )
     }
 
+    private fun logListeningEvent(item: MediaItem) {
+        val songIdStr = item.mediaId
+        val songId = songIdStr.toLongOrNull() ?: return
+        val mood = songMoodCache[songId] ?: return
+
+        scope.launch {
+            AppDatabase.get(context).listeningEventDao().insert(
+                ListeningEventEntity(songId = songId, mood = mood)
+            )
+        }
+    }
+
     fun playSong(song: Song, queue: List<Song> = listOf(song)) {
         val c = controller ?: return
+        // Aggiorna la cache mood per loggare quando il player cambia traccia
+        queue.forEach { s ->
+            s.mood?.let { songMoodCache[s.id] = it }
+        }
         val items = queue.map { it.toMediaItem() }
         val startIndex = queue.indexOf(song).coerceAtLeast(0)
         c.setMediaItems(items, startIndex, 0L)
         c.prepare()
         c.play()
+        // Logga subito anche il primo brano
+        song.mood?.let { mood ->
+            scope.launch {
+                AppDatabase.get(context).listeningEventDao().insert(
+                    ListeningEventEntity(songId = song.id, mood = mood)
+                )
+            }
+        }
     }
 
     fun toggle() {
