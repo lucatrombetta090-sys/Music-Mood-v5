@@ -22,13 +22,16 @@
     <string name="batch_started">Analisi batch avviata in background</string>
     <string name="batch_cancelled">Analisi batch annullata</string>
 
+    <!-- Player -->
     <string name="unknown_title">Sconosciuto</string>
     <string name="unknown_artist">Sconosciuto</string>
 
+    <!-- BubbleMap -->
     <string name="nav_library">Libreria</string>
     <string name="nav_bubblemap">BubbleMap</string>
     <string name="bubblemap_empty">Analizza la libreria per popolare la mappa.\nLong-press su un brano per analizzarlo subito.</string>
-    <!-- Stats / Step 5 -->
+
+    <!-- Stats -->
     <string name="nav_stats">Stats</string>
     <string name="stats_empty">Nessun brano ancora analizzato.\nAvvia l\'analisi batch dalla Libreria!</string>
     <string name="stats_distribution">Distribuzione mood</string>
@@ -41,11 +44,29 @@
     <string name="stats_playlists">Playlist automatiche</string>
     <string name="stats_export_csv">Esporta in CSV</string>
 
-    <!-- Profile / Step 6 + 7 -->
+    <!-- Profile (Step 6) -->
     <string name="nav_profile">Profilo</string>
     <string name="profile_empty">Analizza almeno qualche brano per generare il tuo profilo musicale!</string>
     <string name="profile_radar_title">Il tuo fingerprint emotivo</string>
     <string name="profile_breakdown_title">Top mood</string>
     <string name="profile_share">📤 Condividi il tuo profilo</string>
     <string name="profile_play_daily">▶ Riproduci ora</string>
+
+    <!-- Calibrazione (Fix B) -->
+    <string name="profile_calibrate_card_title">🎯 Calibrazione personalizzata</string>
+    <string name="profile_calibrate">🎯 Calibra sulla mia libreria</string>
+    <string name="profile_calibrate_reset">🔄 Reset calibrazione</string>
+    <string name="profile_calibrate_title">Calibrare il classificatore?</string>
+    <string name="profile_calibrate_msg">Sposterò i centroidi mood usando la media della tua libreria, così la classificazione rifletterà meglio i tuoi gusti. Operazione veloce (pochi secondi), non serve rianalizzare i brani.</string>
+    <string name="profile_calibrate_reset_title">Reset calibrazione?</string>
+    <string name="profile_calibrate_reset_msg">Ripristinerò la classificazione originale del modello, perdendo la calibrazione personalizzata.</string>
+
+    <!-- Weekly Report (Step 8) -->
+    <string name="profile_open_weekly">📊 Apri Weekly Mood Report</string>
+    <string name="weekly_empty">Nessun report disponibile.\nAscolta qualche brano durante la settimana, poi torna qui!</string>
+    <string name="weekly_generate_now">Genera report ora</string>
+    <string name="weekly_songs_played">brani ascoltati</string>
+    <string name="weekly_dominant">Mood dominante</string>
+    <string name="weekly_breakdown">Distribuzione settimanale</string>
+    <string name="weekly_share">📤 Condividi report</string>
 </resources>
