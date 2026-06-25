@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <!-- BottomNavigationView dark, senza background bianco -->
+    <!-- BottomNavigationView dark -->
     <style name="MusicMood.BottomNav"
         parent="Widget.Material3.BottomNavigationView">
         <item name="android:background">@color/dark_surface</item>
@@ -29,7 +29,7 @@
         <item name="strokeWidth">1dp</item>
     </style>
 
-    <!-- Pulsante "primario" gradient-style (filled) -->
+    <!-- Pulsante "primario" filled -->
     <style name="MusicMood.Button.Primary"
         parent="Widget.Material3.Button">
         <item name="backgroundTint">@color/accent_purple</item>
