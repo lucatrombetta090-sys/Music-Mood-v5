@@ -12,9 +12,8 @@
         android:orientation="vertical"
         android:padding="16dp">
 
-        <!-- ─── Daily mood suggestion (Step 7) ─── -->
+        <!-- Daily mood card -->
         <com.google.android.material.card.MaterialCardView
-            android:id="@+id/dailyCard"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:cardCornerRadius="20dp"
@@ -80,7 +79,6 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
-        <!-- ─── Empty state se nessun brano analizzato ─── -->
         <TextView
             android:id="@+id/emptyState"
             android:layout_width="match_parent"
@@ -93,7 +91,6 @@
             android:textColor="?android:attr/textColorSecondary"
             android:visibility="gone" />
 
-        <!-- ─── Contenuto profilo ─── -->
         <LinearLayout
             android:id="@+id/content"
             android:layout_width="match_parent"
@@ -101,7 +98,6 @@
             android:orientation="vertical"
             android:visibility="gone">
 
-            <!-- Archetype hero -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -141,7 +137,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Radar chart -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -170,7 +165,6 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Mood breakdown -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -217,18 +211,56 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Share button (viral!) -->
+            <!-- Calibrazione card -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                app:cardCornerRadius="20dp"
+                app:cardElevation="2dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/profile_calibrate_card_title"
+                        android:textAppearance="?attr/textAppearanceTitleSmall"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/calibrationStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:textAppearance="?attr/textAppearanceBodyMedium"
+                        android:textColor="?android:attr/textColorSecondary" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCalibrate"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/profile_calibrate"
+                        app:cornerRadius="12dp"
+                        app:icon="@drawable/ic_calibrate" />
+                </LinearLayout>
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Weekly Report card -->
             <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnShare"
+                android:id="@+id/btnWeekly"
                 android:layout_width="match_parent"
                 android:layout_height="56dp"
-                android:layout_marginTop="20dp"
-                android:layout_marginBottom="8dp"
-                android:text="@string/profile_share"
+                android:layout_marginTop="16dp"
+                android:text="@string/profile_open_weekly"
                 android:textSize="16sp"
                 app:cornerRadius="16dp"
-                app:icon="@drawable/ic_share" />
+                app:icon="@drawable/ic_weekly" />
 
-        </LinearLayout>
-    </LinearLayout>
-</androidx.core.widget.NestedScrollView>
+            <com.google.android.material.button.MaterialButton
+                android:id="
