@@ -5,6 +5,7 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.PopupMenu
 import android.widget.TextView
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.lifecycle.Lifecycle
@@ -23,7 +24,7 @@ import kotlinx.coroutines.launch
 @UnstableApi
 class PlayerActivity : AppCompatActivity() {
 
-    private val vm: PlayerViewModel by androidx.activity.viewModels()
+    private val vm: PlayerViewModel by viewModels()
 
     private lateinit var artwork: ShapeableImageView
     private lateinit var title: TextView
