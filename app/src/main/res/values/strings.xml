@@ -10,29 +10,26 @@
     <string name="engine_status_ready">✅ Motore Python pronto</string>
     <string name="engine_status_error">❌ Errore inizializzazione</string>
 
-    <!-- Permessi -->
     <string name="permission_title">Permessi audio richiesti</string>
     <string name="permission_body">Per leggere e analizzare la tua libreria musicale locale.</string>
     <string name="permission_grant">Concedi accesso</string>
 
-    <!-- Libreria -->
     <string name="library_empty">Nessun brano trovato nella libreria locale.</string>
     <string name="batch_start">Analizza tutto</string>
     <string name="batch_stop">Annulla analisi</string>
     <string name="batch_started">Analisi batch avviata in background</string>
     <string name="batch_cancelled">Analisi batch annullata</string>
 
-    <!-- Player -->
     <string name="unknown_title">Sconosciuto</string>
     <string name="unknown_artist">Sconosciuto</string>
 
-    <!-- BubbleMap -->
     <string name="nav_library">Libreria</string>
     <string name="nav_bubblemap">BubbleMap</string>
+    <string name="nav_stats">Stats</string>
+    <string name="nav_profile">Profilo</string>
+
     <string name="bubblemap_empty">Analizza la libreria per popolare la mappa.\nLong-press su un brano per analizzarlo subito.</string>
 
-    <!-- Stats -->
-    <string name="nav_stats">Stats</string>
     <string name="stats_empty">Nessun brano ancora analizzato.\nAvvia l\'analisi batch dalla Libreria!</string>
     <string name="stats_distribution">Distribuzione mood</string>
     <string name="stats_metrics">Metriche aggregate</string>
@@ -44,24 +41,20 @@
     <string name="stats_playlists">Playlist automatiche</string>
     <string name="stats_export_csv">Esporta in CSV</string>
 
-    <!-- Profile (Step 6) -->
-    <string name="nav_profile">Profilo</string>
     <string name="profile_empty">Analizza almeno qualche brano per generare il tuo profilo musicale!</string>
     <string name="profile_radar_title">Il tuo fingerprint emotivo</string>
     <string name="profile_breakdown_title">Top mood</string>
     <string name="profile_share">📤 Condividi il tuo profilo</string>
     <string name="profile_play_daily">▶ Riproduci ora</string>
 
-    <!-- Calibrazione (Fix B) -->
     <string name="profile_calibrate_card_title">🎯 Calibrazione personalizzata</string>
     <string name="profile_calibrate">🎯 Calibra sulla mia libreria</string>
     <string name="profile_calibrate_reset">🔄 Reset calibrazione</string>
     <string name="profile_calibrate_title">Calibrare il classificatore?</string>
-    <string name="profile_calibrate_msg">Sposterò i centroidi mood usando la media della tua libreria, così la classificazione rifletterà meglio i tuoi gusti. Operazione veloce (pochi secondi), non serve rianalizzare i brani.</string>
+    <string name="profile_calibrate_msg">Sposterò i centroidi mood usando la media della tua libreria, così la classificazione rifletterà meglio i tuoi gusti.</string>
     <string name="profile_calibrate_reset_title">Reset calibrazione?</string>
-    <string name="profile_calibrate_reset_msg">Ripristinerò la classificazione originale del modello, perdendo la calibrazione personalizzata.</string>
+    <string name="profile_calibrate_reset_msg">Ripristinerò la classificazione originale del modello.</string>
 
-    <!-- Weekly Report (Step 8) -->
     <string name="profile_open_weekly">📊 Apri Weekly Mood Report</string>
     <string name="weekly_empty">Nessun report disponibile.\nAscolta qualche brano durante la settimana, poi torna qui!</string>
     <string name="weekly_generate_now">Genera report ora</string>
@@ -69,4 +62,42 @@
     <string name="weekly_dominant">Mood dominante</string>
     <string name="weekly_breakdown">Distribuzione settimanale</string>
     <string name="weekly_share">📤 Condividi report</string>
+
+    <!-- Drawer & navigation -->
+    <string name="drawer_tagline">Discover the mood of your songs</string>
+    <string name="drawer_section_app">App</string>
+    <string name="drawer_settings">Impostazioni</string>
+    <string name="drawer_about">Info app</string>
+    <string name="drawer_weekly">Weekly Report</string>
+
+    <!-- Player -->
+    <string name="player_now_playing">In riproduzione</string>
+    <string name="player_close">Chiudi</string>
+    <string name="player_menu_desc">Menu player</string>
+    <string name="player_play_pause">Play/Pausa</string>
+    <string name="player_prev">Precedente</string>
+    <string name="player_next">Successivo</string>
+    <string name="player_shuffle">Casuale</string>
+    <string name="player_repeat">Ripeti</string>
+    <string name="player_analyze_now">Analizza ora</string>
+    <string name="player_share_song">Condividi brano</string>
+    <string name="player_share_coming">Condivisione brano in arrivo!</string>
+
+    <!-- Settings -->
+    <string name="settings_calibration_title">🎯 Calibrazione classificatore</string>
+    <string name="settings_shift_factor">Fattore di calibrazione (quanto adattare ai tuoi gusti)</string>
+    <string name="settings_calibration_info">0.0 = nessuna calibrazione · 0.5 = equilibrato · 1.0 = massima adattabilità.</string>
+    <string name="settings_apply_calibration">Applica calibrazione</string>
+    <string name="settings_appearance">🎨 Aspetto</string>
+    <string name="settings_dynamic_gradient">Gradient dinamico in base al mood</string>
+    <string name="settings_haptic">Vibrazione sui pulsanti</string>
+    <string name="settings_data">📦 Dati</string>
+    <string name="settings_clear_analysis">🗑️ Cancella analisi mood</string>
+    <string name="settings_clear_confirm_title">Cancellare tutta l\'analisi?</string>
+    <string name="settings_clear_confirm_msg">Tutti i dati di analisi mood verranno cancellati. Dovrai rilanciare il batch.</string>
+    <string name="settings_clear_confirm_yes">Cancella</string>
+    <string name="settings_version">v0.6.0 · Fase 1 UI</string>
+
+    <!-- About -->
+    <string name="about_message">Music-Mood v0.6.0\n\nAnalisi mood on-device tramite motore DSP v5 (MFCC, chroma, valenza/arousal).\n\nMade with ❤️ in Italy</string>
 </resources>
