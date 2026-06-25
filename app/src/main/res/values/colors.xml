@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Brand legacy (mantenuti per back-compat) -->
+    <!-- Brand legacy (mantenuti per back-compat con vecchi themes.xml notturni) -->
     <color name="brand_primary">#6750A4</color>
+    <color name="brand_secondary">#FF5C8D</color>
+    <color name="brand_accent">#8E6BFF</color>
     <color name="brand_on_primary">#FFFFFF</color>
     <color name="surface_dim">#1A1424</color>
 
@@ -9,6 +11,11 @@
     <color name="dark_bg_top">#1F1936</color>
     <color name="dark_bg_mid">#2A1A45</color>
     <color name="dark_bg_bottom">#3D1A5C</color>
+
+    <!-- Alias per back-compat con eventuali themes.xml notturni che usano vecchi nomi -->
+    <color name="bg_dark_top">#1F1936</color>
+    <color name="bg_dark_mid">#2A1A45</color>
+    <color name="bg_dark_bottom">#3D1A5C</color>
 
     <color name="dark_surface">#241B3A</color>
     <color name="dark_surface_variant">#2E2548</color>
