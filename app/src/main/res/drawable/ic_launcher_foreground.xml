@@ -1,9 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Outline esterno della nota musicale -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M62,30 L62,62 C62,68 57,73 51,73 C45,73 40,68 40,62 C40,56 45,51 51,51 C53,51 55,51.5 56,52.5 L56,38 L70,34 L70,30 Z" />
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="3"
+        android:pathData="M62,28 L62,68 C62,74.6 56.6,80 50,80 C43.4,80 38,74.6 38,68 C38,61.4 43.4,56 50,56 C52.5,56 54.8,56.8 56.7,58.1 L56.7,40 L72,36 L72,28 Z" />
+
+    <!-- Pallino centrale come "dot" emoji feeling -->
+    <path
+        android:fillColor="#FFD93D"
+        android:pathData="M50,62 m-6,0 a6,6 0,1,0 12,0 a6,6 0,1,0 -12,0" />
+
+    <!-- Mini cerchio gioia in alto -->
+    <path
+        android:fillColor="#FFE066"
+        android:pathData="M65,33 m-3,0 a3,3 0,1,0 6,0 a3,3 0,1,0 -6,0" />
+
+    <!-- Mini cerchio happy nel mezzo -->
+    <path
+        android:fillColor="#FFAB66"
+        android:pathData="M58,46 m-3,0 a3,3 0,1,0 6,0 a3,3 0,1,0 -6,0" />
 </vector>
