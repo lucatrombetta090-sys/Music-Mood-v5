@@ -1,6 +1,31 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Brand legacy (mantenuti per back-compat) -->
     <color name="brand_primary">#6750A4</color>
     <color name="brand_on_primary">#FFFFFF</color>
-    <color name="surface_dim">#F4EFF8</color>
+    <color name="surface_dim">#1A1424</color>
+
+    <!-- Dark palette nuova -->
+    <color name="dark_bg_top">#1F1936</color>
+    <color name="dark_bg_mid">#2A1A45</color>
+    <color name="dark_bg_bottom">#3D1A5C</color>
+
+    <color name="dark_surface">#241B3A</color>
+    <color name="dark_surface_variant">#2E2548</color>
+    <color name="dark_card_bg">#2A2046</color>
+
+    <color name="accent_purple">#8E6BFF</color>
+    <color name="accent_pink">#FF5C8D</color>
+    <color name="accent_orange">#FF8A65</color>
+    <color name="accent_yellow">#FFD54F</color>
+
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#B3A8D9</color>
+    <color name="text_tertiary">#7A6FA0</color>
+
+    <color name="divider">#3D2F5C</color>
+
+    <!-- Player gradient defaults -->
+    <color name="player_gradient_start">#E94560</color>
+    <color name="player_gradient_end">#5B4BC4</color>
 </resources>
