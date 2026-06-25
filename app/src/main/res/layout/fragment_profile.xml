@@ -79,6 +79,7 @@
             </LinearLayout>
         </com.google.android.material.card.MaterialCardView>
 
+        <!-- Empty state -->
         <TextView
             android:id="@+id/emptyState"
             android:layout_width="match_parent"
@@ -91,6 +92,7 @@
             android:textColor="?android:attr/textColorSecondary"
             android:visibility="gone" />
 
+        <!-- Content (visibile solo se profilo disponibile) -->
         <LinearLayout
             android:id="@+id/content"
             android:layout_width="match_parent"
@@ -98,6 +100,7 @@
             android:orientation="vertical"
             android:visibility="gone">
 
+            <!-- Archetype hero -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -137,6 +140,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Radar chart -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -165,6 +169,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- Mood breakdown + top artist + totale -->
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -251,7 +256,7 @@
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Weekly Report card -->
+            <!-- Weekly Report button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btnWeekly"
                 android:layout_width="match_parent"
@@ -262,5 +267,18 @@
                 app:cornerRadius="16dp"
                 app:icon="@drawable/ic_weekly" />
 
+            <!-- Share button -->
             <com.google.android.material.button.MaterialButton
-                android:id="
+                android:id="@+id/btnShare"
+                android:layout_width="match_parent"
+                android:layout_height="56dp"
+                android:layout_marginTop="12dp"
+                android:layout_marginBottom="8dp"
+                android:text="@string/profile_share"
+                android:textSize="16sp"
+                app:cornerRadius="16dp"
+                app:icon="@drawable/ic_share" />
+
+        </LinearLayout>
+    </LinearLayout>
+</androidx.core.widget.NestedScrollView>
