@@ -10,9 +10,9 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.google.common.util.concurrent.MoreExecutors
+import com.musicmood.data.Song
 import com.musicmood.data.db.AppDatabase
 import com.musicmood.data.db.ListeningEventEntity
-import com.musicmood.data.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -30,7 +30,6 @@ class PlayerController private constructor(private val context: Context) {
     private val _state = MutableStateFlow(PlaybackUiState())
     val state: StateFlow<PlaybackUiState> = _state.asStateFlow()
 
-    // Cache: mappa songId -> mood per loggare gli eventi
     private val songMoodCache = mutableMapOf<Long, String>()
 
     init {
@@ -50,7 +49,6 @@ class PlayerController private constructor(private val context: Context) {
         val listener = object : Player.Listener {
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 syncState()
-                // Logga l'evento se è una transizione "naturale" o "seek"
                 mediaItem?.let { logListeningEvent(it) }
             }
             override fun onIsPlayingChanged(isPlaying: Boolean) = syncState()
@@ -72,10 +70,8 @@ class PlayerController private constructor(private val context: Context) {
     }
 
     private fun logListeningEvent(item: MediaItem) {
-        val songIdStr = item.mediaId
-        val songId = songIdStr.toLongOrNull() ?: return
+        val songId = item.mediaId.toLongOrNull() ?: return
         val mood = songMoodCache[songId] ?: return
-
         scope.launch {
             AppDatabase.get(context).listeningEventDao().insert(
                 ListeningEventEntity(songId = songId, mood = mood)
@@ -85,16 +81,12 @@ class PlayerController private constructor(private val context: Context) {
 
     fun playSong(song: Song, queue: List<Song> = listOf(song)) {
         val c = controller ?: return
-        // Aggiorna la cache mood per loggare quando il player cambia traccia
-        queue.forEach { s ->
-            s.mood?.let { songMoodCache[s.id] = it }
-        }
+        queue.forEach { it.mood?.let { m -> songMoodCache[it.id] = m } }
         val items = queue.map { it.toMediaItem() }
         val startIndex = queue.indexOf(song).coerceAtLeast(0)
         c.setMediaItems(items, startIndex, 0L)
         c.prepare()
         c.play()
-        // Logga subito anche il primo brano
         song.mood?.let { mood ->
             scope.launch {
                 AppDatabase.get(context).listeningEventDao().insert(
@@ -111,6 +103,17 @@ class PlayerController private constructor(private val context: Context) {
 
     fun next() { controller?.seekToNext() }
     fun prev() { controller?.seekToPrevious() }
+    fun seekTo(positionMs: Long) { controller?.seekTo(positionMs) }
+
+    fun getProgress(): com.musicmood.player.PlayerProgress {
+        val c = controller ?: return com.musicmood.player.PlayerProgress(0L, 0L)
+        return com.musicmood.player.PlayerProgress(
+            positionMs = c.currentPosition.coerceAtLeast(0L),
+            durationMs = c.duration.coerceAtLeast(0L),
+        )
+    }
+
+    fun currentSongId(): Long? = controller?.currentMediaItem?.mediaId?.toLongOrNull()
 
     fun release() {
         controller?.release()
