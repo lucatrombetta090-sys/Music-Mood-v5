@@ -6,13 +6,21 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [MoodEntity::class],
-    version = 1,
+    entities = [
+        MoodEntity::class,
+        CalibrationEntity::class,
+        ListeningEventEntity::class,
+        WeeklyReportEntity::class,
+    ],
+    version = 2,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun moodDao(): MoodDao
+    abstract fun calibrationDao(): CalibrationDao
+    abstract fun listeningEventDao(): ListeningEventDao
+    abstract fun weeklyReportDao(): WeeklyReportDao
 
     companion object {
         @Volatile
@@ -25,7 +33,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "musicmood.db"
                 )
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration()  // dato che siamo in dev
                     .build()
                 INSTANCE = instance
                 instance
