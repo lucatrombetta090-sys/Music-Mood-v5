@@ -11,7 +11,7 @@
         <item name="colorSecondary">@color/accent_pink</item>
         <item name="colorOnSecondary">@color/text_primary</item>
 
-        <item name="colorBackground">@color/dark_bg_top</item>
+        <item name="android:colorBackground">@color/dark_bg_top</item>
         <item name="colorSurface">@color/dark_surface</item>
         <item name="colorSurfaceVariant">@color/dark_surface_variant</item>
         <item name="colorOnSurface">@color/text_primary</item>
