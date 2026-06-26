@@ -2,7 +2,6 @@ package com.musicmood.stats
 
 import android.content.Context
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.RectF
 import android.util.AttributeSet
@@ -19,12 +18,12 @@ class MoodDistributionView @JvmOverloads constructor(
     private var slices: List<Slice> = emptyList()
     private val barPaint = Paint(Paint.ANTI_ALIAS_FLAG)
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF333333.toInt()
+        color = 0xFFFFFFFF.toInt()  // bianco
         textSize = sp(13f)
         isFakeBoldText = true
     }
     private val countPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF666666.toInt()
+        color = 0xFFB3A8D9.toInt()  // text_secondary chiaro
         textSize = sp(12f)
         textAlign = Paint.Align.RIGHT
     }
@@ -57,19 +56,16 @@ class MoodDistributionView @JvmOverloads constructor(
 
         slices.forEachIndexed { i, slice ->
             val y = padding + i * rowHeight + rowHeight / 2
-            // Label
             canvas.drawText(slice.label, dp(12f), y + dp(5f), labelPaint)
 
-            // Bar
             val ratio = slice.count.toFloat() / maxCount
             val barRight = left + barAreaWidth * ratio
-            barPaint.color = (slice.color and 0x00FFFFFF) or 0xCC000000.toInt()
+            barPaint.color = (slice.color and 0x00FFFFFF) or 0xDD000000.toInt()
             canvas.drawRoundRect(
                 RectF(left, y - dp(12f), barRight, y + dp(12f)),
                 dp(6f), dp(6f), barPaint,
             )
 
-            // Count + percentage
             val pct = (slice.count * 100.0 / total).toInt()
             canvas.drawText("${slice.count} ($pct%)", width - dp(8f), y + dp(5f), countPaint)
         }
