@@ -1,6 +1,7 @@
 package com.musicmood.weekly
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.musicmood.data.db.AppDatabase
@@ -29,6 +30,7 @@ data class WeeklyUi(
 
 class WeeklyReportViewModel(app: Application) : AndroidViewModel(app) {
 
+    private val tag = "WeeklyReportVM"
     private val reportDao = AppDatabase.get(app).weeklyReportDao()
 
     private val _ui = MutableStateFlow(WeeklyUi())
@@ -36,48 +38,68 @@ class WeeklyReportViewModel(app: Application) : AndroidViewModel(app) {
 
     fun load() {
         viewModelScope.launch {
-            val recent = withContext(Dispatchers.IO) { reportDao.recent(12) }
-            val latest = recent.firstOrNull()
-            if (latest == null) {
+            try {
+                val recent = withContext(Dispatchers.IO) {
+                    runCatching { reportDao.recent(12) }
+                        .onFailure { Log.e(tag, "recent() failed: ${it.message}", it) }
+                        .getOrDefault(emptyList())
+                }
+                val latest = recent.firstOrNull()
+                if (latest == null) {
+                    _ui.value = WeeklyUi(empty = true)
+                    return@launch
+                }
+                val previous = recent.drop(1).firstOrNull()
+                val moodPct = buildPercentages(latest)
+                val delta = previous?.let { computeDelta(latest, it) }
+                _ui.value = WeeklyUi(
+                    latest          = latest,
+                    previous        = previous,
+                    moodPercentages = moodPct,
+                    deltaVsPrev     = delta,
+                    weekLabel       = formatWeekLabel(latest),
+                    archive         = recent,
+                )
+            } catch (t: Throwable) {
+                Log.e(tag, "load() failed: ${t.message}", t)
                 _ui.value = WeeklyUi(empty = true)
-                return@launch
             }
-            val previous = recent.drop(1).firstOrNull()
-            val moodPct = buildPercentages(latest)
-            val delta = previous?.let { computeDelta(latest, it) }
-            _ui.value = WeeklyUi(
-                latest          = latest,
-                previous        = previous,
-                moodPercentages = moodPct,
-                deltaVsPrev     = delta,
-                weekLabel       = formatWeekLabel(latest),
-                archive         = recent,
-            )
         }
     }
 
-    /** Forza la generazione del report della settimana corrente (per test/manuale). */
     fun generateNow() {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) {
-                WeeklyReportGenerator(getApplication())
-                    .generateCurrentWeek()
+            try {
+                withContext(Dispatchers.IO) {
+                    WeeklyReportGenerator(getApplication())
+                        .generateCurrentWeek()
+                }
+                load()
+            } catch (t: Throwable) {
+                Log.e(tag, "generateNow() failed: ${t.message}", t)
             }
-            load()
         }
     }
 
     private fun buildPercentages(r: WeeklyReportEntity): List<Triple<String, Int, Int>> {
-        val json = JSONObject(r.moodsJson)
-        val total = r.totalPlays.coerceAtLeast(1)
-        val list = mutableListOf<Triple<String, Int, Int>>()
-        json.keys().forEach { mood ->
-            val cnt = json.getInt(mood)
-            val pct = (cnt * 100.0 / total).toInt()
-            val color = PersonalityTypes.BY_MOOD[mood]?.color ?: 0xFF999999.toInt()
-            list += Triple(mood, pct, color)
+        return try {
+            if (r.moodsJson.isBlank()) return emptyList()
+            val json = JSONObject(r.moodsJson)
+            val total = r.totalPlays.coerceAtLeast(1)
+            val list = mutableListOf<Triple<String, Int, Int>>()
+            val it = json.keys()
+            while (it.hasNext()) {
+                val mood = it.next()
+                val cnt = json.optInt(mood, 0)
+                val pct = (cnt * 100.0 / total).toInt()
+                val color = PersonalityTypes.BY_MOOD[mood]?.color ?: 0xFF999999.toInt()
+                list += Triple(mood, pct, color)
+            }
+            list.sortedByDescending { it.second }
+        } catch (t: Throwable) {
+            Log.w(tag, "buildPercentages() failed: ${t.message}")
+            emptyList()
         }
-        return list.sortedByDescending { it.second }
     }
 
     private fun computeDelta(latest: WeeklyReportEntity, prev: WeeklyReportEntity): Int? {
@@ -87,23 +109,32 @@ class WeeklyReportViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun formatWeekLabel(r: WeeklyReportEntity): String {
-        val fmt = SimpleDateFormat("d MMM", Locale.ITALIAN)
-        val from = fmt.format(Date(r.fromMs))
-        val to   = fmt.format(Date(r.toMs - 1))
-        return "Settimana ${r.week} • $from – $to"
+        return try {
+            val fmt = SimpleDateFormat("d MMM", Locale.ITALIAN)
+            val from = fmt.format(Date(r.fromMs))
+            val to   = fmt.format(Date(r.toMs - 1))
+            "Settimana ${r.week} • $from – $to"
+        } catch (_: Throwable) {
+            "Settimana ${r.week}"
+        }
     }
 
     suspend fun buildShareUri(): android.net.Uri? = withContext(Dispatchers.IO) {
-        val u = _ui.value
-        val latest = u.latest ?: return@withContext null
-        WeeklyShareImageRenderer(getApplication()).render(
-            WeeklyShareImageRenderer.Data(
-                weekLabel       = u.weekLabel,
-                totalPlays      = latest.totalPlays,
-                dominantMood    = latest.dominantMood,
-                moodPercentages = u.moodPercentages,
-                previousWeekDelta = u.deltaVsPrev,
+        try {
+            val u = _ui.value
+            val latest = u.latest ?: return@withContext null
+            WeeklyShareImageRenderer(getApplication()).render(
+                WeeklyShareImageRenderer.Data(
+                    weekLabel       = u.weekLabel,
+                    totalPlays      = latest.totalPlays,
+                    dominantMood    = latest.dominantMood,
+                    moodPercentages = u.moodPercentages,
+                    previousWeekDelta = u.deltaVsPrev,
+                )
             )
-        )
+        } catch (t: Throwable) {
+            Log.e(tag, "buildShareUri() failed: ${t.message}", t)
+            null
+        }
     }
 }
