@@ -12,13 +12,6 @@ import kotlin.math.cos
 import kotlin.math.min
 import kotlin.math.sin
 
-/**
- * Radar chart a 9 vertici (uno per mood). Stile Spotify Wrapped:
- * - assi sottili grigi
- * - poligono colorato semi-trasparente con outline forte
- * - etichette mood + percentuali
- * - animazione di crescita all'apertura
- */
 class RadarChartView @JvmOverloads constructor(
     context: Context,
     attrs: AttributeSet? = null,
@@ -29,16 +22,15 @@ class RadarChartView @JvmOverloads constructor(
 
     private var axes: List<Axis> = emptyList()
     private var animProgress = 1f
-    private var dominantColor: Int = 0xFF6750A4.toInt()
+    private var dominantColor: Int = 0xFF8E6BFF.toInt()
 
-    // ────── Paints ──────
     private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x33888888
+        color = 0x33B3A8D9
         strokeWidth = 1f
         style = Paint.Style.STROKE
     }
     private val axisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x55888888.toInt()
+        color = 0x55B3A8D9.toInt()
         strokeWidth = 1.5f
         style = Paint.Style.STROKE
     }
@@ -51,13 +43,13 @@ class RadarChartView @JvmOverloads constructor(
         strokeJoin = Paint.Join.ROUND
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF333333.toInt()
-        textSize = sp(11f)
+        color = 0xFFFFFFFF.toInt()
+        textSize = sp(12f)
         isFakeBoldText = true
         textAlign = Paint.Align.CENTER
     }
     private val valuePaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF666666.toInt()
+        color = 0xFFB3A8D9.toInt()
         textSize = sp(10f)
         textAlign = Paint.Align.CENTER
     }
@@ -68,7 +60,7 @@ class RadarChartView @JvmOverloads constructor(
     fun setData(items: List<Axis>, dominantColor: Int) {
         axes = items
         this.dominantColor = dominantColor
-        polygonFillPaint.color   = (dominantColor and 0x00FFFFFF) or 0x44000000
+        polygonFillPaint.color   = (dominantColor and 0x00FFFFFF) or 0x55000000
         polygonStrokePaint.color = dominantColor
         dotPaint.color           = dominantColor
         animateIn()
@@ -101,7 +93,6 @@ class RadarChartView @JvmOverloads constructor(
     }
 
     private fun drawGrid(canvas: Canvas, cx: Float, cy: Float, radius: Float) {
-        // 4 cerchi concentrici per riferimento
         for (i in 1..4) {
             val r = radius * i / 4f
             val path = Path()
@@ -140,14 +131,13 @@ class RadarChartView @JvmOverloads constructor(
         path.close()
         canvas.drawPath(path, polygonFillPaint)
         canvas.drawPath(path, polygonStrokePaint)
-        // Pallini sui vertici
         for ((x, y) in dots) {
             canvas.drawCircle(x, y, dp(4f), dotPaint)
         }
     }
 
     private fun drawLabels(canvas: Canvas, cx: Float, cy: Float, radius: Float) {
-        val labelRadius = radius + dp(20f)
+        val labelRadius = radius + dp(22f)
         for (i in axes.indices) {
             val angle = angleFor(i)
             val x = cx + labelRadius * cos(angle).toFloat()
@@ -160,7 +150,6 @@ class RadarChartView @JvmOverloads constructor(
 
     private fun angleFor(index: Int): Double {
         val total = axes.size
-        // -90° per partire dall'alto
         return Math.PI * 2 * index / total - Math.PI / 2
     }
 
