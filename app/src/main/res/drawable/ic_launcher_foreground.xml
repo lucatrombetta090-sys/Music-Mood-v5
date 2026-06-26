@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Nota musicale bianca -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M68,30 L68,68 C68,74.6 62.6,80 56,80 C49.4,80 44,74.6 44,68 C44,61.4 49.4,56 56,56 C58.5,56 60.8,56.8 62.7,58.1 L62.7,40 L78,36 L78,30 Z" />
+
+    <!-- Pallino giallo al centro -->
+    <path
+        android:fillColor="#FFD93D"
+        android:pathData="M56,62 m-6,0 a6,6 0,1,0 12,0 a6,6 0,1,0 -12,0" />
+
+    <!-- Cerchio decorativo arancione -->
+    <path
+        android:fillColor="#FFAB66"
+        android:pathData="M72,42 m-3,0 a3,3 0,1,0 6,0 a3,3 0,1,0 -6,0" />
+
+    <!-- Cerchio decorativo giallo -->
+    <path
+        android:fillColor="#FFE066"
+        android:pathData="M78,30 m-2,0 a2,2 0,1,0 4,0 a2,2 0,1,0 -4,0" />
+</vector>
