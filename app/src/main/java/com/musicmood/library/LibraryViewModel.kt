@@ -3,6 +3,7 @@ package com.musicmood.library
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.media3.common.util.UnstableApi
 import androidx.work.*
 import com.chaquo.python.Python
 import com.musicmood.MoodAnalysis
@@ -31,6 +32,7 @@ sealed interface AnalysisUiState {
     data class  Failed(val song: Song, val message: String)           : AnalysisUiState
 }
 
+@UnstableApi
 class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     private val mediaRepo   = MediaStoreRepository(app)
@@ -48,32 +50,27 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private val _selectedMood = MutableStateFlow<String?>(null)
     val selectedMood: StateFlow<String?> = _selectedMood.asStateFlow()
 
-    /** Numero totale di brani analizzati (per badge UI). */
     val analyzedCount: StateFlow<Int> = moodRepo.observeCount()
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
-    /** Stato del job WorkManager (LiveData per compatibilità con observe). */
     val batchWorkInfo = workManager
         .getWorkInfosForUniqueWorkLiveData(MoodAnalysisWorker.WORK_NAME)
 
-    private var rawSongs: List<Song> = emptyList()
+    /** Fonte di verità: TUTTI i brani con mood mergiato. Il filtro si applica su questo. */
+    private var mergedSongs: List<Song> = emptyList()
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Caricamento libreria
-    // ──────────────────────────────────────────────────────────────────────
     fun loadLibrary() {
         if (_library.value is LibraryUiState.Loading) return
         viewModelScope.launch {
             _library.value = LibraryUiState.Loading
             try {
-                val songs = withContext(Dispatchers.IO) { mediaRepo.loadAllSongs() }
-                rawSongs = songs
+                val rawSongs = withContext(Dispatchers.IO) { mediaRepo.loadAllSongs() }
 
-                // Merge in tempo reale con i dati di mood salvati su Room
+                // Osserva i mood salvati e re-merge ogni volta che cambia il DB
                 moodRepo.observeAll().collect { moodList ->
                     val moodById = moodList.associateBy { it.songId }
-                    val merged = rawSongs.map { it.withMood(moodById[it.id]) }
-                    _library.value = LibraryUiState.Loaded(applyFilter(merged))
+                    mergedSongs = rawSongs.map { it.withMood(moodById[it.id]) }
+                    _library.value = LibraryUiState.Loaded(applyFilter(mergedSongs))
                 }
             } catch (e: Exception) {
                 _library.value = LibraryUiState.Error(e.message ?: "Errore sconosciuto")
@@ -89,22 +86,15 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setMoodFilter(mood: String?) {
         _selectedMood.value = mood
-        val current = _library.value
-        if (current is LibraryUiState.Loaded) {
-            _library.value = LibraryUiState.Loaded(applyFilter(
-                rawSongs.map { raw -> current.songs.find { it.id == raw.id } ?: raw }
-            ))
+        // Applica SEMPRE il filtro su mergedSongs (fonte di verità), mai sulla lista già filtrata!
+        if (mergedSongs.isNotEmpty()) {
+            _library.value = LibraryUiState.Loaded(applyFilter(mergedSongs))
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Analisi singola "on-tap" (cache-aware)
-    // ──────────────────────────────────────────────────────────────────────
     fun analyze(song: Song) {
         viewModelScope.launch {
             _analysis.value = AnalysisUiState.Running(song)
-
-            // 1) Cache hit?
             val cached = moodRepo.findById(song.id)
             if (cached != null) {
                 _analysis.value = AnalysisUiState.Done(
@@ -121,8 +111,6 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
                 )
                 return@launch
             }
-
-            // 2) Cache miss → calcola e salva
             val result = withContext(Dispatchers.Default) {
                 runCatching {
                     val pcm = decoder.decodeWindow(
@@ -156,16 +144,10 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     fun resetAnalysisState() { _analysis.value = AnalysisUiState.Idle }
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Riproduzione (Step 3 — Media3)
-    // ──────────────────────────────────────────────────────────────────────
     fun playSong(song: Song, queue: List<Song>) {
         player.playSong(song, queue)
     }
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Analisi batch (Step 2 — WorkManager)
-    // ──────────────────────────────────────────────────────────────────────
     fun startBatchAnalysis() {
         val request = OneTimeWorkRequestBuilder<MoodAnalysisWorker>()
             .setConstraints(
