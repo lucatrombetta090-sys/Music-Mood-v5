@@ -9,8 +9,9 @@ import android.view.ScaleGestureDetector
 import android.view.View
 import androidx.core.content.ContextCompat
 import com.musicmood.R
-import kotlin.math.max
+import kotlin.math.cos
 import kotlin.math.min
+import kotlin.math.sin
 import kotlin.math.sqrt
 
 class BubbleMapView @JvmOverloads constructor(
@@ -23,8 +24,8 @@ class BubbleMapView @JvmOverloads constructor(
         val songId: Long,
         val title: String,
         val artist: String,
-        val valence: Float,    // -1..+1
-        val arousal: Float,    // -1..+1
+        val valence: Float,
+        val arousal: Float,
         val mood: String,
         val color: Int,
     )
@@ -34,17 +35,22 @@ class BubbleMapView @JvmOverloads constructor(
 
     private val bgPaint   = Paint(Paint.ANTI_ALIAS_FLAG)
     private val axisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x55888888.toInt(); strokeWidth = 2f
+        color = 0x88B3A8D9.toInt(); strokeWidth = 2f
     }
     private val gridPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0x22888888; strokeWidth = 1f
+        color = 0x33B3A8D9.toInt(); strokeWidth = 1f
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF666666.toInt(); textSize = sp(11f); isFakeBoldText = true
+        color = 0xFFB3A8D9.toInt()  // text_secondary chiaro
+        textSize = sp(11f)
+        isFakeBoldText = true
     }
     private val moodLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFF333333.toInt(); textSize = sp(13f); isFakeBoldText = true
+        color = 0xFFFFFFFF.toInt()  // bianco pieno
+        textSize = sp(14f)
+        isFakeBoldText = true
         textAlign = Paint.Align.CENTER
+        setShadowLayer(4f, 0f, 0f, 0xCC000000.toInt())  // ombra per leggibilità
     }
     private val bubblePaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
@@ -113,34 +119,29 @@ class BubbleMapView @JvmOverloads constructor(
         val cy = h / 2 + offsetY
         val r = min(w, h) / 2f * 0.92f * scale
 
-        // Griglia
         for (i in -4..4) {
             val v = i / 4f
             canvas.drawLine(cx - r, cy - v * r, cx + r, cy - v * r, gridPaint)
             canvas.drawLine(cx + v * r, cy - r, cx + v * r, cy + r, gridPaint)
         }
-        // Assi
         canvas.drawLine(cx - r, cy, cx + r, cy, axisPaint)
         canvas.drawLine(cx, cy - r, cx, cy + r, axisPaint)
 
-        // Etichette assi
         canvas.drawText("Valenza →", cx + r - dp(80f), cy - dp(8f), labelPaint)
         canvas.drawText("Arousal ↑", cx + dp(8f), cy - r + dp(16f), labelPaint)
         canvas.drawText("− calmo",   cx + dp(8f), cy + r - dp(8f), labelPaint)
         canvas.drawText("− neg.",    cx - r + dp(8f), cy + dp(16f), labelPaint)
 
-        // Etichette mood (in posizione attesa dei centroidi)
         moodAnchors.forEach { (label, v, a) ->
             val x = cx + v * r
             val y = cy - a * r
             canvas.drawText(label, x, y - dp(16f), moodLabelPaint)
         }
 
-        // Bolle
         bubbles.forEach { b ->
             val x = cx + b.valence * r
             val y = cy - b.arousal * r
-            bubblePaint.color = (b.color and 0x00FFFFFF) or 0xAA000000.toInt()
+            bubblePaint.color = (b.color and 0x00FFFFFF) or 0xCC000000.toInt()
             canvas.drawCircle(x, y, dp(5f), bubblePaint)
         }
     }
