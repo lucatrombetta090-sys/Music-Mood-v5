@@ -23,7 +23,8 @@ class MediaStoreRepository(private val context: Context) {
             MediaStore.Audio.Media.ALBUM_ID,
             MediaStore.Audio.Media.DURATION,
             MediaStore.Audio.Media.YEAR,
-            MediaStore.Audio.Media.DATA,  // path
+            MediaStore.Audio.Media.DATA,
+            MediaStore.Audio.Media.MIME_TYPE,
             MediaStore.Audio.Media.IS_MUSIC,
         )
         val selection = "${MediaStore.Audio.Media.IS_MUSIC} != 0"
@@ -44,6 +45,7 @@ class MediaStoreRepository(private val context: Context) {
             val durIdx      = cursor.getColumnIndexOrThrow(MediaStore.Audio.Media.DURATION)
             val yearIdx     = cursor.getColumnIndex(MediaStore.Audio.Media.YEAR)
             val dataIdx     = cursor.getColumnIndex(MediaStore.Audio.Media.DATA)
+            val mimeIdx     = cursor.getColumnIndex(MediaStore.Audio.Media.MIME_TYPE)
 
             while (cursor.moveToNext()) {
                 val id = cursor.getLong(idIdx)
@@ -54,6 +56,7 @@ class MediaStoreRepository(private val context: Context) {
                 val duration = cursor.getLong(durIdx)
                 val yearVal = if (yearIdx >= 0) cursor.getInt(yearIdx) else 0
                 val data = if (dataIdx >= 0) cursor.getString(dataIdx) else null
+                val mime = if (mimeIdx >= 0) cursor.getString(mimeIdx) ?: "audio/*" else "audio/*"
 
                 val uri = ContentUris.withAppendedId(
                     MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id
@@ -70,11 +73,12 @@ class MediaStoreRepository(private val context: Context) {
                     title = title,
                     artist = artist,
                     album = album,
-                    genre = genreById[id],
-                    year = yearVal.takeIf { it > 0 },
                     durationMs = duration,
                     uri = uri,
                     albumArtUri = albumArt,
+                    mimeType = mime,
+                    genre = genreById[id],
+                    year = yearVal.takeIf { it > 0 },
                     folderPath = folder,
                 )
             }
