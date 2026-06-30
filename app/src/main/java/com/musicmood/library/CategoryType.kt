@@ -1,5 +1,7 @@
 package com.musicmood.library
 
+import com.musicmood.data.Song
+
 enum class CategoryType {
     SONGS,    // tutti i brani
     ARTISTS,  // per artista
@@ -19,3 +21,15 @@ enum class CategoryType {
         }
     }
 }
+
+/**
+ * Modello di un raggruppamento (artista, album, genere, anno, cartella).
+ */
+data class CategoryGroup(
+    val key: String,
+    val title: String,
+    val subtitle: String,
+    val songCount: Int,
+    val totalDurationMs: Long,
+    val coverSong: Song?,
+)
