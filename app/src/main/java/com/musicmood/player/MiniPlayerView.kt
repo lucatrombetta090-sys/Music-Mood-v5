@@ -3,6 +3,7 @@ package com.musicmood.player
 import android.content.Context
 import android.content.Intent
 import android.util.AttributeSet
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.widget.FrameLayout
@@ -23,6 +24,8 @@ class MiniPlayerView @JvmOverloads constructor(
     defStyleAttr: Int = 0,
 ) : FrameLayout(context, attrs, defStyleAttr) {
 
+    private val tag = "MiniPlayerView"
+
     private val art: ShapeableImageView
     private val title: TextView
     private val artist: TextView
@@ -41,16 +44,43 @@ class MiniPlayerView @JvmOverloads constructor(
         next      = findViewById(R.id.mpNext)
         prev      = findViewById(R.id.mpPrev)
 
-        playPause.setOnClickListener { controller.toggle() }
-        next.setOnClickListener { controller.next() }
-        prev.setOnClickListener { controller.prev() }
-
-        // Tap → apre PlayerActivity full-screen
-        setOnClickListener {
-            context.startActivity(Intent(context, PlayerActivity::class.java))
+        // Click sui pulsanti
+        playPause.setOnClickListener {
+            Log.d(tag, "play/pause clicked")
+            controller.toggle()
+        }
+        next.setOnClickListener {
+            Log.d(tag, "next clicked")
+            controller.next()
+        }
+        prev.setOnClickListener {
+            Log.d(tag, "prev clicked")
+            controller.prev()
         }
 
+        // Tap su qualsiasi area NON-pulsante → apri PlayerActivity
+        val openPlayer = View.OnClickListener {
+            Log.d(tag, "tap → opening PlayerActivity")
+            openPlayerActivity()
+        }
+        art.setOnClickListener(openPlayer)
+        title.setOnClickListener(openPlayer)
+        artist.setOnClickListener(openPlayer)
+        // Anche click sull'area vuota della card
+        setOnClickListener(openPlayer)
+
         visibility = View.GONE
+    }
+
+    private fun openPlayerActivity() {
+        try {
+            val intent = Intent(context, PlayerActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+            context.startActivity(intent)
+        } catch (t: Throwable) {
+            Log.e(tag, "openPlayerActivity failed: ${t.message}", t)
+        }
     }
 
     fun observe(owner: LifecycleOwner) {
