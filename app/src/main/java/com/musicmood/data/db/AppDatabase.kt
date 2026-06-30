@@ -11,8 +11,6 @@ import androidx.room.RoomDatabase
         CalibrationEntity::class,
         ListeningEventEntity::class,
         WeeklyReportEntity::class,
-        FavoriteEntity::class,
-        AchievementEntity::class,
         ArtworkCacheEntity::class,
     ],
     version = 5,
@@ -24,8 +22,6 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun calibrationDao(): CalibrationDao
     abstract fun listeningEventDao(): ListeningEventDao
     abstract fun weeklyReportDao(): WeeklyReportDao
-    abstract fun favoriteDao(): FavoriteDao
-    abstract fun achievementDao(): AchievementDao
     abstract fun artworkCacheDao(): ArtworkCacheDao
 
     companion object {
@@ -47,3 +43,4 @@ abstract class AppDatabase : RoomDatabase() {
         }
     }
 }
+``
