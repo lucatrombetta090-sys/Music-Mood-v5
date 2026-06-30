@@ -12,9 +12,12 @@ data class Song(
     val title: String,
     val artist: String,
     val album: String,
+    val genre: String? = null,    // ← verifica/aggiungi
+    val year: Int? = null,        // ← verifica/aggiungi
     val durationMs: Long,
-    val albumArtUri: Uri?,
+    val albumArtUri: android.net.Uri? = null,
     val mimeType: String,
+    val folderPath: String? = null,  // opzionale
 
     // Risultati dell'analisi (null finché non analizzato)
     val mood: String? = null,
