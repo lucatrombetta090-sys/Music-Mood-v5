@@ -119,4 +119,9 @@
     <string name="back">Indietro</string>
     <string name="cat_unknown">Sconosciuto</string>
     <string name="cat_songs_count">%1$d brani</string>
+
+    <!-- YAMNet -->
+    <string name="settings_yamnet_title">🤖 Classificatore avanzato</string>
+    <string name="settings_yamnet_switch">Usa YAMNet (TFLite)</string>
+    <string name="settings_yamnet_desc">Modello deep learning di Google per riconoscimento mood. Più accurato del DSP, soprattutto per dance/pop. Il DSP rimane attivo come fallback.</string>
 </resources>
