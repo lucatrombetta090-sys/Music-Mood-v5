@@ -148,14 +148,14 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             else -> songs.filter { it.mood == filter }
         }
 
-private fun keyForSong(s: Song, cat: CategoryType): String = when (cat) {
-    CategoryType.ARTISTS -> s.artist.ifBlank { "Sconosciuto" }
-    CategoryType.ALBUMS  -> s.album.ifBlank { "Sconosciuto" }
-    CategoryType.GENRES  -> (s.genre ?: "Sconosciuto").ifBlank { "Sconosciuto" }
-    CategoryType.YEARS   -> s.year?.toString() ?: "Sconosciuto"
-    CategoryType.FOLDERS -> (s.folderPath ?: "Sconosciuto").ifBlank { "Sconosciuto" }
-    CategoryType.SONGS   -> s.id.toString()
-}
+    private fun keyForSong(s: Song, cat: CategoryType): String = when (cat) {
+        CategoryType.ARTISTS -> s.artist.ifBlank { "Sconosciuto" }
+        CategoryType.ALBUMS  -> s.album.ifBlank { "Sconosciuto" }
+        CategoryType.GENRES  -> (s.genre ?: "Sconosciuto").ifBlank { "Sconosciuto" }
+        CategoryType.YEARS   -> s.year?.toString() ?: "Sconosciuto"
+        CategoryType.FOLDERS -> (s.folderPath ?: "Sconosciuto").ifBlank { "Sconosciuto" }
+        CategoryType.SONGS   -> s.id.toString()
+    }
 
     private fun buildCategories(songs: List<Song>, cat: CategoryType): List<CategoryGroup> {
         val grouped = songs.groupBy { keyForSong(it, cat) }
@@ -181,7 +181,7 @@ private fun keyForSong(s: Song, cat: CategoryType): String = when (cat) {
         return if (h > 0) "%dh %02dm".format(h, m) else "%dm".format(m)
     }
 
-    // ===== Resto del codice esistente =====
+    // ===== Analisi singola =====
 
     fun analyze(song: Song) {
         viewModelScope.launch {
@@ -235,9 +235,13 @@ private fun keyForSong(s: Song, cat: CategoryType): String = when (cat) {
 
     fun resetAnalysisState() { _analysis.value = AnalysisUiState.Idle }
 
+    // ===== Playback =====
+
     fun playSong(song: Song, queue: List<Song>) {
         player.playSong(song, queue)
     }
+
+    // ===== Batch =====
 
     fun startBatchAnalysis() {
         val request = OneTimeWorkRequestBuilder<MoodAnalysisWorker>()
