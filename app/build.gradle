@@ -91,4 +91,7 @@ dependencies {
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.1.0'
 
     // TabLayout (è già dentro Material Components, non serve aggiungere altro)
+
+    // MediaPipe Tasks Audio per classificazione YAMNet
+    implementation 'com.google.mediapipe:tasks-audio:0.10.14'
 }
