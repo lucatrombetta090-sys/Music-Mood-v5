@@ -21,7 +21,6 @@ class AudioDecoder(private val context: Context) {
         val durationMs: Long,
     )
 
-    /** PCM 16-bit LE, sample rate originale del brano (usato dal DSP Python). */
     fun decodeWindow(uri: Uri, startMs: Long, durationMs: Long): PcmBuffer {
         val safeDuration = durationMs.coerceAtMost(30_000L)
         val maxOutputBytes = 10 * 1024 * 1024
@@ -80,12 +79,16 @@ class AudioDecoder(private val context: Context) {
                         val inBuf = codec.getInputBuffer(inIdx)!!
                         val size = extractor.readSampleData(inBuf, 0)
                         if (size < 0 || extractor.sampleTime > endTimeUs) {
-                            codec.queueInputBuffer(inIdx, 0, 0, 0,
-                                MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                            codec.queueInputBuffer(
+                                inIdx, 0, 0, 0,
+                                MediaCodec.BUFFER_FLAG_END_OF_STREAM
+                            )
                             inputDone = true
                         } else {
-                            codec.queueInputBuffer(inIdx, 0, size,
-                                extractor.sampleTime, 0)
+                            codec.queueInputBuffer(
+                                inIdx, 0, size,
+                                extractor.sampleTime, 0
+                            )
                             extractor.advance()
                         }
                     }
@@ -102,7 +105,8 @@ class AudioDecoder(private val context: Context) {
                     }
                     codec.releaseOutputBuffer(outIdx, false)
                     if (bufferInfo.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0 ||
-                        output.size() >= maxOutputBytes) {
+                        output.size() >= maxOutputBytes
+                    ) {
                         outputDone = true
                     }
                 }
@@ -138,7 +142,6 @@ class AudioDecoder(private val context: Context) {
     }
 
     private fun convertToFloat16kMono(pcm: PcmBuffer): FloatArray {
-        // 1. PCM 16-bit LE → Float32 nel range originale
         val bb = ByteBuffer.wrap(pcm.bytes).order(ByteOrder.LITTLE_ENDIAN)
         val totalSamples = pcm.bytes.size / 2
         val asFloat = FloatArray(totalSamples)
@@ -147,7 +150,6 @@ class AudioDecoder(private val context: Context) {
             asFloat[i] = s / 32768f
         }
 
-        // 2. Downmix a mono se stereo (media canali)
         val mono = if (pcm.channels == 1) {
             asFloat
         } else {
@@ -162,7 +164,6 @@ class AudioDecoder(private val context: Context) {
             out
         }
 
-        // 3. Resample lineare a 16 kHz
         val targetSr = 16_000
         if (pcm.sampleRate == targetSr) return mono
         val newLen = (mono.size.toLong() * targetSr / pcm.sampleRate).toInt()
@@ -178,4 +179,3 @@ class AudioDecoder(private val context: Context) {
         return resampled
     }
 }
-``
