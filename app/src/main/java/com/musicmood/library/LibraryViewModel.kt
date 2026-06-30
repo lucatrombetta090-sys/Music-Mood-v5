@@ -26,10 +26,10 @@ sealed interface LibraryUiState {
 }
 
 sealed interface AnalysisUiState {
-    data object Idle                                                  : AnalysisUiState
-    data class  Running(val song: Song)                               : AnalysisUiState
-    data class  Done(val song: Song, val result: MoodAnalysis)        : AnalysisUiState
-    data class  Failed(val song: Song, val message: String)           : AnalysisUiState
+    data object Idle                                              : AnalysisUiState
+    data class  Running(val song: Song)                           : AnalysisUiState
+    data class  Done(val song: Song, val result: MoodAnalysis)    : AnalysisUiState
+    data class  Failed(val song: Song, val message: String)       : AnalysisUiState
 }
 
 @UnstableApi
@@ -50,13 +50,25 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private val _selectedMood = MutableStateFlow<String?>(null)
     val selectedMood: StateFlow<String?> = _selectedMood.asStateFlow()
 
+    /** Tab corrente (Brani/Artisti/...) */
+    private val _category = MutableStateFlow(CategoryType.SONGS)
+    val category: StateFlow<CategoryType> = _category.asStateFlow()
+
+    /** Quando l'utente entra in una categoria (es. "Katy Perry"), tiene la chiave. */
+    private val _groupKey = MutableStateFlow<String?>(null)
+    val groupKey: StateFlow<String?> = _groupKey.asStateFlow()
+
+    /** Le categorie calcolate per la tab corrente. */
+    private val _categories = MutableStateFlow<List<CategoryGroup>>(emptyList())
+    val categories: StateFlow<List<CategoryGroup>> = _categories.asStateFlow()
+
     val analyzedCount: StateFlow<Int> = moodRepo.observeCount()
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     val batchWorkInfo = workManager
         .getWorkInfosForUniqueWorkLiveData(MoodAnalysisWorker.WORK_NAME)
 
-    /** Fonte di verità: TUTTI i brani con mood mergiato. Il filtro si applica su questo. */
+    /** Fonte di verità: TUTTI i brani con mood mergiato. */
     private var mergedSongs: List<Song> = emptyList()
 
     fun loadLibrary() {
@@ -65,12 +77,10 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             _library.value = LibraryUiState.Loading
             try {
                 val rawSongs = withContext(Dispatchers.IO) { mediaRepo.loadAllSongs() }
-
-                // Osserva i mood salvati e re-merge ogni volta che cambia il DB
                 moodRepo.observeAll().collect { moodList ->
                     val moodById = moodList.associateBy { it.songId }
                     mergedSongs = rawSongs.map { it.withMood(moodById[it.id]) }
-                    _library.value = LibraryUiState.Loaded(applyFilter(mergedSongs))
+                    refreshUi()
                 }
             } catch (e: Exception) {
                 _library.value = LibraryUiState.Error(e.message ?: "Errore sconosciuto")
@@ -78,19 +88,99 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    private fun applyFilter(songs: List<Song>): List<Song> =
+    fun setMoodFilter(mood: String?) {
+        _selectedMood.value = mood
+        refreshUi()
+    }
+
+    fun setCategory(type: CategoryType) {
+        _category.value = type
+        _groupKey.value = null   // reset group quando cambi tab
+        refreshUi()
+    }
+
+    fun enterGroup(key: String) {
+        _groupKey.value = key
+        refreshUi()
+    }
+
+    fun exitGroup() {
+        _groupKey.value = null
+        refreshUi()
+    }
+
+    private fun refreshUi() {
+        val songs = mergedSongs
+        if (songs.isEmpty()) {
+            _library.value = LibraryUiState.Loaded(emptyList())
+            _categories.value = emptyList()
+            return
+        }
+
+        val filteredByMood = applyMoodFilter(songs)
+
+        when (_category.value) {
+            CategoryType.SONGS -> {
+                _categories.value = emptyList()
+                _library.value = LibraryUiState.Loaded(filteredByMood)
+            }
+            else -> {
+                val groupKey = _groupKey.value
+                if (groupKey == null) {
+                    // Vista raggruppata: mostra categorie
+                    _categories.value = buildCategories(filteredByMood, _category.value)
+                    _library.value = LibraryUiState.Loaded(emptyList())
+                } else {
+                    // Vista dentro un gruppo: mostra brani del gruppo
+                    val songsInGroup = filteredByMood.filter {
+                        keyForSong(it, _category.value) == groupKey
+                    }
+                    _library.value = LibraryUiState.Loaded(songsInGroup)
+                    _categories.value = emptyList()
+                }
+            }
+        }
+    }
+
+    private fun applyMoodFilter(songs: List<Song>): List<Song> =
         when (val filter = _selectedMood.value) {
             null -> songs
             else -> songs.filter { it.mood == filter }
         }
 
-    fun setMoodFilter(mood: String?) {
-        _selectedMood.value = mood
-        // Applica SEMPRE il filtro su mergedSongs (fonte di verità), mai sulla lista già filtrata!
-        if (mergedSongs.isNotEmpty()) {
-            _library.value = LibraryUiState.Loaded(applyFilter(mergedSongs))
-        }
+    private fun keyForSong(s: Song, cat: CategoryType): String = when (cat) {
+        CategoryType.ARTISTS -> s.artist.ifBlank { "Sconosciuto" }
+        CategoryType.ALBUMS  -> s.album.ifBlank { "Sconosciuto" }
+        CategoryType.GENRES  -> (s.genre ?: "Sconosciuto").ifBlank { "Sconosciuto" }
+        CategoryType.YEARS   -> s.year?.toString() ?: "Sconosciuto"
+        CategoryType.SONGS   -> s.id.toString()
     }
+
+    private fun buildCategories(songs: List<Song>, cat: CategoryType): List<CategoryGroup> {
+        val grouped = songs.groupBy { keyForSong(it, cat) }
+        return grouped.map { (key, list) ->
+            val totalDur = list.sumOf { it.durationMs }
+            val cover = list.firstOrNull { it.albumArtUri != null } ?: list.first()
+            val subtitle = "${list.size} brani • ${formatDuration(totalDur)}"
+            CategoryGroup(
+                key = key,
+                title = key,
+                subtitle = subtitle,
+                songCount = list.size,
+                totalDurationMs = totalDur,
+                coverSong = cover,
+            )
+        }.sortedByDescending { it.songCount }
+    }
+
+    private fun formatDuration(ms: Long): String {
+        val sec = ms / 1000
+        val h = sec / 3600
+        val m = (sec % 3600) / 60
+        return if (h > 0) "%dh %02dm".format(h, m) else "%dm".format(m)
+    }
+
+    // ===== Resto del codice esistente =====
 
     fun analyze(song: Song) {
         viewModelScope.launch {
