@@ -26,44 +26,45 @@ data class WeeklyUi(
     val weekLabel: String = "",
     val archive: List<WeeklyReportEntity> = emptyList(),
     val empty: Boolean = false,
+    val errorMessage: String? = null,
 )
 
 class WeeklyReportViewModel(app: Application) : AndroidViewModel(app) {
 
     private val tag = "WeeklyReportVM"
-    private val reportDao = AppDatabase.get(app).weeklyReportDao()
 
-    private val _ui = MutableStateFlow(WeeklyUi())
+    private val _ui = MutableStateFlow(WeeklyUi(empty = true))
     val ui: StateFlow<WeeklyUi> = _ui.asStateFlow()
 
     fun load() {
         viewModelScope.launch {
-            try {
-                val recent = withContext(Dispatchers.IO) {
-                    runCatching { reportDao.recent(12) }
-                        .onFailure { Log.e(tag, "recent() failed: ${it.message}", it) }
-                        .getOrDefault(emptyList())
+            val newState = withContext(Dispatchers.IO) {
+                runCatching {
+                    val dao = AppDatabase.get(getApplication()).weeklyReportDao()
+                    val recent = dao.recent(12)
+                    val latest = recent.firstOrNull()
+                    if (latest == null) {
+                        WeeklyUi(empty = true)
+                    } else {
+                        val previous = recent.drop(1).firstOrNull()
+                        val moodPct = buildPercentages(latest)
+                        val delta = previous?.let { computeDelta(latest, it) }
+                        WeeklyUi(
+                            latest          = latest,
+                            previous        = previous,
+                            moodPercentages = moodPct,
+                            deltaVsPrev     = delta,
+                            weekLabel       = formatWeekLabel(latest),
+                            archive         = recent,
+                            empty           = false,
+                        )
+                    }
+                }.getOrElse { t ->
+                    Log.e(tag, "load() failed: ${t.message}", t)
+                    WeeklyUi(empty = true, errorMessage = t.message)
                 }
-                val latest = recent.firstOrNull()
-                if (latest == null) {
-                    _ui.value = WeeklyUi(empty = true)
-                    return@launch
-                }
-                val previous = recent.drop(1).firstOrNull()
-                val moodPct = buildPercentages(latest)
-                val delta = previous?.let { computeDelta(latest, it) }
-                _ui.value = WeeklyUi(
-                    latest          = latest,
-                    previous        = previous,
-                    moodPercentages = moodPct,
-                    deltaVsPrev     = delta,
-                    weekLabel       = formatWeekLabel(latest),
-                    archive         = recent,
-                )
-            } catch (t: Throwable) {
-                Log.e(tag, "load() failed: ${t.message}", t)
-                _ui.value = WeeklyUi(empty = true)
             }
+            _ui.value = newState
         }
     }
 
@@ -71,33 +72,35 @@ class WeeklyReportViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             try {
                 withContext(Dispatchers.IO) {
-                    WeeklyReportGenerator(getApplication())
-                        .generateCurrentWeek()
+                    runCatching {
+                        WeeklyReportGenerator(getApplication()).generateCurrentWeek()
+                    }.onFailure { Log.e(tag, "generateNow() failed: ${it.message}", it) }
                 }
                 load()
             } catch (t: Throwable) {
-                Log.e(tag, "generateNow() failed: ${t.message}", t)
+                Log.e(tag, "generateNow() outer failed: ${t.message}", t)
+                _ui.value = _ui.value.copy(errorMessage = t.message)
             }
         }
     }
 
     private fun buildPercentages(r: WeeklyReportEntity): List<Triple<String, Int, Int>> {
-        return try {
-            if (r.moodsJson.isBlank()) return emptyList()
+        return runCatching {
+            if (r.moodsJson.isBlank()) return@runCatching emptyList()
             val json = JSONObject(r.moodsJson)
             val total = r.totalPlays.coerceAtLeast(1)
             val list = mutableListOf<Triple<String, Int, Int>>()
-            val it = json.keys()
-            while (it.hasNext()) {
-                val mood = it.next()
+            val keys = json.keys()
+            while (keys.hasNext()) {
+                val mood = keys.next()
                 val cnt = json.optInt(mood, 0)
                 val pct = (cnt * 100.0 / total).toInt()
                 val color = PersonalityTypes.BY_MOOD[mood]?.color ?: 0xFF999999.toInt()
                 list += Triple(mood, pct, color)
             }
             list.sortedByDescending { it.second }
-        } catch (t: Throwable) {
-            Log.w(tag, "buildPercentages() failed: ${t.message}")
+        }.getOrElse {
+            Log.w(tag, "buildPercentages failed: ${it.message}")
             emptyList()
         }
     }
@@ -109,20 +112,18 @@ class WeeklyReportViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun formatWeekLabel(r: WeeklyReportEntity): String {
-        return try {
+        return runCatching {
             val fmt = SimpleDateFormat("d MMM", Locale.ITALIAN)
             val from = fmt.format(Date(r.fromMs))
             val to   = fmt.format(Date(r.toMs - 1))
             "Settimana ${r.week} • $from – $to"
-        } catch (_: Throwable) {
-            "Settimana ${r.week}"
-        }
+        }.getOrElse { "Settimana ${r.week}" }
     }
 
     suspend fun buildShareUri(): android.net.Uri? = withContext(Dispatchers.IO) {
-        try {
+        runCatching {
             val u = _ui.value
-            val latest = u.latest ?: return@withContext null
+            val latest = u.latest ?: return@runCatching null
             WeeklyShareImageRenderer(getApplication()).render(
                 WeeklyShareImageRenderer.Data(
                     weekLabel       = u.weekLabel,
@@ -132,8 +133,8 @@ class WeeklyReportViewModel(app: Application) : AndroidViewModel(app) {
                     previousWeekDelta = u.deltaVsPrev,
                 )
             )
-        } catch (t: Throwable) {
-            Log.e(tag, "buildShareUri() failed: ${t.message}", t)
+        }.getOrElse {
+            Log.e(tag, "buildShareUri failed: ${it.message}", it)
             null
         }
     }
