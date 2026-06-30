@@ -11,11 +11,11 @@ import androidx.work.ForegroundInfo
 import androidx.work.WorkerParameters
 import com.chaquo.python.Python
 import com.chaquo.python.android.AndroidPlatform
-import com.musicmood.MoodAnalysis
 import com.musicmood.MusicMoodApp
 import com.musicmood.R
-import com.musicmood.audio.AudioDecoder
+import com.musicmood.audio.MoodAnalysisOrchestrator
 import com.musicmood.data.MoodRepository
+import com.musicmood.data.db.MoodEntity
 import com.musicmood.library.MediaStoreRepository
 
 class MoodAnalysisWorker(
@@ -27,45 +27,38 @@ class MoodAnalysisWorker(
 
     override suspend fun doWork(): Result {
         Log.i(tag, "Worker avviato")
-
-        // ---- 1. Promuovi a foreground PRIMA di qualsiasi operazione pesante ----
         try {
             setForeground(buildForegroundInfo("Preparazione…", 0, 0, true))
         } catch (e: Exception) {
-            // Se non possiamo diventare foreground (permesso notifica negato),
-            // continuiamo lo stesso ma in background normale
-            Log.w(tag, "setForeground failed (continuo in background): ${e.message}")
+            Log.w(tag, "setForeground failed: ${e.message}")
         }
 
-        // ---- 2. Inizializza dipendenze in try/catch ----
         val moodRepo: MoodRepository
         val mediaRepo: MediaStoreRepository
-        val decoder: AudioDecoder
-        val pyModule: com.chaquo.python.PyObject
+        val orchestrator: MoodAnalysisOrchestrator
 
         try {
-            moodRepo  = MoodRepository.get(applicationContext)
+            moodRepo = MoodRepository.get(applicationContext)
             mediaRepo = MediaStoreRepository(applicationContext)
-            decoder   = AudioDecoder(applicationContext)
 
-            // Inizializza Python in modo idempotente
+            // Python (per DSP fallback)
             if (!Python.isStarted()) {
                 Python.start(AndroidPlatform(applicationContext))
             }
-            pyModule = Python.getInstance().getModule("music_analyzer")
-            Log.i(tag, "Dipendenze pronte")
-        } catch (e: Throwable) {
-            Log.e(tag, "Errore inizializzazione: ${e.message}", e)
+            Python.getInstance().getModule("music_analyzer")
+
+            orchestrator = MoodAnalysisOrchestrator(applicationContext)
+        } catch (t: Throwable) {
+            Log.e(tag, "init failed: ${t.message}", t)
             return Result.failure()
         }
 
-        // ---- 3. Carica i brani e filtra quelli già analizzati ----
         val pending = try {
             val all = mediaRepo.loadAllSongs()
             val analyzed = moodRepo.getAnalyzedIds()
             all.filter { it.id !in analyzed }
-        } catch (e: Throwable) {
-            Log.e(tag, "Errore caricamento libreria: ${e.message}", e)
+        } catch (t: Throwable) {
+            Log.e(tag, "Errore caricamento libreria: ${t.message}", t)
             return Result.failure()
         }
 
@@ -75,102 +68,59 @@ class MoodAnalysisWorker(
         }
 
         val total = pending.size
-        Log.i(tag, "Brani da analizzare: $total")
-
-        // ---- 4. Loop principale con gestione errori per-brano ----
         var done = 0
         var failed = 0
+        var yamnetCount = 0
+        var dspCount = 0
 
         for (song in pending) {
-            if (isStopped) {
-                Log.i(tag, "Worker fermato dall'utente")
-                return Result.success()
-            }
+            if (isStopped) return Result.success()
 
             try {
-                val pcm = decoder.decodeWindow(
+                val result = orchestrator.analyze(
                     uri = song.uri,
-                    startMs = (song.durationMs / 2).coerceAtLeast(0L),
-                    durationMs = 30_000L,
+                    title = song.title,
+                    artist = song.artist,
+                    durationMs = song.durationMs,
                 )
-
-                val pyResult = pyModule.callAttr(
-                    "analyze_pcm",
-                    pcm.bytes,
-                    pcm.sampleRate,
-                    pcm.channels,
-                    pcm.durationMs.toInt(),
-                    song.title,
-                    song.artist,
-                )
-                val analysis = MoodAnalysis.fromPy(pyResult)
-                moodRepo.save(song.id, analysis)
-
+                moodRepo.saveWithSource(song.id, result.analysis, result.source)
+                if (result.source == "yamnet") yamnetCount++ else dspCount++
             } catch (e: OutOfMemoryError) {
-                Log.e(tag, "OOM su ${song.title}, forzo GC", e)
+                Log.e(tag, "OOM su ${song.title}", e)
                 System.gc()
                 failed++
-            } catch (e: Throwable) {
-                Log.w(tag, "Errore su ${song.title}: ${e.message}")
+            } catch (t: Throwable) {
+                Log.w(tag, "Errore su ${song.title}: ${t.message}")
                 failed++
             }
 
             done++
-
-            // Aggiorna notifica ogni 5 brani per non spammare il sistema
             if (done % 5 == 0 || done == total) {
                 try {
-                    setForeground(
-                        buildForegroundInfo(
-                            "Analisi in corso",
-                            done, total, false
-                        )
-                    )
-                } catch (_: Exception) {
-                    // se notifica non disponibile, ignora
-                }
+                    setForeground(buildForegroundInfo(
+                        "YAMNet: $yamnetCount · DSP: $dspCount", done, total, false
+                    ))
+                } catch (_: Exception) {}
             }
         }
 
-        Log.i(tag, "Worker completato: ok=${done - failed} failed=$failed")
+        Log.i(tag, "Completato: ok=${done - failed} yamnet=$yamnetCount dsp=$dspCount failed=$failed")
         return Result.success()
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // Notifica
-    // ─────────────────────────────────────────────────────────────────────────
-    private fun buildForegroundInfo(
-        title: String,
-        done: Int,
-        total: Int,
-        indeterminate: Boolean,
-    ): ForegroundInfo {
+    private fun buildForegroundInfo(title: String, done: Int, total: Int, indeterminate: Boolean): ForegroundInfo {
         val notification = buildNotification(title, done, total, indeterminate)
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-            ForegroundInfo(
-                MusicMoodApp.NOTIFICATION_ID_ANALYSIS,
-                notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
-            )
+            ForegroundInfo(MusicMoodApp.NOTIFICATION_ID_ANALYSIS, notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         } else {
-            ForegroundInfo(
-                MusicMoodApp.NOTIFICATION_ID_ANALYSIS,
-                notification,
-            )
+            ForegroundInfo(MusicMoodApp.NOTIFICATION_ID_ANALYSIS, notification)
         }
     }
 
-    private fun buildNotification(
-        title: String,
-        done: Int,
-        total: Int,
-        indeterminate: Boolean,
-    ): Notification {
+    private fun buildNotification(title: String, done: Int, total: Int, indeterminate: Boolean): Notification {
         val text = if (total > 0) "$done / $total brani" else "Avvio…"
-
-        return NotificationCompat.Builder(
-            applicationContext, MusicMoodApp.CHANNEL_ANALYSIS
-        )
+        return NotificationCompat.Builder(applicationContext, MusicMoodApp.CHANNEL_ANALYSIS)
             .setContentTitle("🎵 Music-Mood")
             .setContentText(text)
             .setSubText(title)
@@ -185,7 +135,5 @@ class MoodAnalysisWorker(
             .build()
     }
 
-    companion object {
-        const val WORK_NAME = "mood_analysis_batch"
-    }
+    companion object { const val WORK_NAME = "mood_analysis_batch" }
 }
