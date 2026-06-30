@@ -10,6 +10,7 @@
     <string name="engine_status_ready">✅ Motore Python pronto</string>
     <string name="engine_status_error">❌ Errore inizializzazione</string>
 
+    <!-- Permessi -->
     <string name="permission_title">Permessi audio richiesti</string>
     <string name="permission_body">Per leggere e analizzare la tua libreria musicale locale.</string>
     <string name="permission_grant">Concedi accesso</string>
@@ -103,17 +104,18 @@
     <string name="settings_clear_confirm_title">Cancellare tutta l\'analisi?</string>
     <string name="settings_clear_confirm_msg">Tutti i dati di analisi mood verranno cancellati. Dovrai rilanciare il batch.</string>
     <string name="settings_clear_confirm_yes">Cancella</string>
-    <string name="settings_version">v0.6.0 · Fase 1 UI</string>
+    <string name="settings_version">v0.9.0 · Categorie + Copertine</string>
 
     <!-- About -->
-    <string name="about_message">Music-Mood v0.6.0\n\nAnalisi mood on-device tramite motore DSP v5 (MFCC, chroma, valenza/arousal).\n\nMade with ❤️ in Italy</string>
+    <string name="about_message">Music-Mood v0.9.0\n\nAnalisi mood on-device tramite motore DSP v5 (MFCC, chroma, valenza/arousal).\n\nMade with ❤️ in Italy</string>
 
-    <!-- Categorie -->
+    <!-- Categorie libreria -->
     <string name="cat_songs">Brani</string>
     <string name="cat_artists">Artisti</string>
     <string name="cat_albums">Album</string>
     <string name="cat_genres">Generi</string>
     <string name="cat_years">Anno</string>
+    <string name="cat_folders">Cartelle</string>
     <string name="back">Indietro</string>
     <string name="cat_unknown">Sconosciuto</string>
     <string name="cat_songs_count">%1$d brani</string>
