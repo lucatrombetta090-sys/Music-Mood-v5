@@ -6,10 +6,6 @@ import com.musicmood.data.db.AppDatabase
 import com.musicmood.data.db.MoodEntity
 import kotlinx.coroutines.flow.Flow
 
-/**
- * Single-source-of-truth per i risultati di analisi mood.
- * Espone l'API ad alto livello usata da ViewModel e Worker.
- */
 class MoodRepository private constructor(context: Context) {
 
     private val dao = AppDatabase.get(context).moodDao()
@@ -22,6 +18,10 @@ class MoodRepository private constructor(context: Context) {
     suspend fun getAnalyzedIds(): Set<Long> = dao.getAnalyzedIds().toSet()
 
     suspend fun save(songId: Long, a: MoodAnalysis) {
+        saveWithSource(songId, a, "dsp")
+    }
+
+    suspend fun saveWithSource(songId: Long, a: MoodAnalysis, source: String) {
         dao.upsert(
             MoodEntity(
                 songId      = songId,
@@ -32,6 +32,7 @@ class MoodRepository private constructor(context: Context) {
                 tempoBpm    = a.tempoBpm,
                 musicKey    = a.key,
                 mode        = a.mode,
+                source      = source,
             )
         )
     }
