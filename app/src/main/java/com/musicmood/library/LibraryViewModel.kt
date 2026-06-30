@@ -50,15 +50,12 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     private val _selectedMood = MutableStateFlow<String?>(null)
     val selectedMood: StateFlow<String?> = _selectedMood.asStateFlow()
 
-    /** Tab corrente (Brani/Artisti/...) */
     private val _category = MutableStateFlow(CategoryType.SONGS)
     val category: StateFlow<CategoryType> = _category.asStateFlow()
 
-    /** Quando l'utente entra in una categoria (es. "Katy Perry"), tiene la chiave. */
     private val _groupKey = MutableStateFlow<String?>(null)
     val groupKey: StateFlow<String?> = _groupKey.asStateFlow()
 
-    /** Le categorie calcolate per la tab corrente. */
     private val _categories = MutableStateFlow<List<CategoryGroup>>(emptyList())
     val categories: StateFlow<List<CategoryGroup>> = _categories.asStateFlow()
 
@@ -68,7 +65,6 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     val batchWorkInfo = workManager
         .getWorkInfosForUniqueWorkLiveData(MoodAnalysisWorker.WORK_NAME)
 
-    /** Fonte di verità: TUTTI i brani con mood mergiato. */
     private var mergedSongs: List<Song> = emptyList()
 
     fun loadLibrary() {
@@ -95,7 +91,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setCategory(type: CategoryType) {
         _category.value = type
-        _groupKey.value = null   // reset group quando cambi tab
+        _groupKey.value = null
         refreshUi()
     }
 
@@ -127,11 +123,9 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             else -> {
                 val groupKey = _groupKey.value
                 if (groupKey == null) {
-                    // Vista raggruppata: mostra categorie
                     _categories.value = buildCategories(filteredByMood, _category.value)
                     _library.value = LibraryUiState.Loaded(emptyList())
                 } else {
-                    // Vista dentro un gruppo: mostra brani del gruppo
                     val songsInGroup = filteredByMood.filter {
                         keyForSong(it, _category.value) == groupKey
                     }
@@ -180,8 +174,6 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         val m = (sec % 3600) / 60
         return if (h > 0) "%dh %02dm".format(h, m) else "%dm".format(m)
     }
-
-    // ===== Analisi singola =====
 
     fun analyze(song: Song) {
         viewModelScope.launch {
@@ -235,13 +227,9 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
 
     fun resetAnalysisState() { _analysis.value = AnalysisUiState.Idle }
 
-    // ===== Playback =====
-
     fun playSong(song: Song, queue: List<Song>) {
         player.playSong(song, queue)
     }
-
-    // ===== Batch =====
 
     fun startBatchAnalysis() {
         val request = OneTimeWorkRequestBuilder<MoodAnalysisWorker>()
