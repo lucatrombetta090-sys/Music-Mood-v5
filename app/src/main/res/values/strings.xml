@@ -107,4 +107,14 @@
 
     <!-- About -->
     <string name="about_message">Music-Mood v0.6.0\n\nAnalisi mood on-device tramite motore DSP v5 (MFCC, chroma, valenza/arousal).\n\nMade with ❤️ in Italy</string>
+
+    <!-- Categorie -->
+    <string name="cat_songs">Brani</string>
+    <string name="cat_artists">Artisti</string>
+    <string name="cat_albums">Album</string>
+    <string name="cat_genres">Generi</string>
+    <string name="cat_years">Anno</string>
+    <string name="back">Indietro</string>
+    <string name="cat_unknown">Sconosciuto</string>
+    <string name="cat_songs_count">%1$d brani</string>
 </resources>
