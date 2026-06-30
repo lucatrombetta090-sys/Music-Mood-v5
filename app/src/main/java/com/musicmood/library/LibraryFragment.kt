@@ -2,35 +2,53 @@ package com.musicmood.library
 
 import android.os.Bundle
 import android.view.View
+import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.TextView
+import androidx.core.view.isGone
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
+import androidx.media3.common.util.UnstableApi
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.work.WorkInfo
+import com.google.android.material.card.MaterialCardView
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.tabs.TabLayout
 import com.musicmood.MoodAnalysis
 import com.musicmood.R
+import com.musicmood.data.ArtworkRepository
 import com.musicmood.data.Song
 import kotlinx.coroutines.launch
 
+@UnstableApi
 class LibraryFragment : Fragment(R.layout.fragment_library) {
 
     private val vm: LibraryViewModel by viewModels()
-    private lateinit var adapter: SongAdapter
+    private lateinit var songAdapter: SongAdapter
+    private lateinit var categoryAdapter: CategoryAdapter
+
     private lateinit var progress: ProgressBar
     private lateinit var emptyState: TextView
     private lateinit var counter: TextView
     private lateinit var chipGroup: ChipGroup
+    private lateinit var chipScroll: View
     private lateinit var fabBatch: ExtendedFloatingActionButton
+    private lateinit var categoryTabs: TabLayout
+    private lateinit var recyclerSongs: RecyclerView
+    private lateinit var recyclerCategories: RecyclerView
+    private lateinit var groupBanner: MaterialCardView
+    private lateinit var groupTitle: TextView
+    private lateinit var groupSubtitle: TextView
+    private lateinit var btnGroupBack: ImageButton
 
     private val moodFilters = listOf(
         "Energico", "Positivo", "Aggressivo", "Malinconico",
@@ -40,25 +58,52 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        progress   = view.findViewById(R.id.progress)
-        emptyState = view.findViewById(R.id.emptyState)
-        counter    = view.findViewById(R.id.counter)
-        chipGroup  = view.findViewById(R.id.chipGroup)
-        fabBatch   = view.findViewById(R.id.fabBatch)
+        progress           = view.findViewById(R.id.progress)
+        emptyState         = view.findViewById(R.id.emptyState)
+        counter            = view.findViewById(R.id.counter)
+        chipGroup          = view.findViewById(R.id.chipGroup)
+        chipScroll         = view.findViewById(R.id.chipScroll)
+        fabBatch           = view.findViewById(R.id.fabBatch)
+        categoryTabs       = view.findViewById(R.id.categoryTabs)
+        recyclerSongs      = view.findViewById(R.id.recyclerView)
+        recyclerCategories = view.findViewById(R.id.recyclerCategories)
+        groupBanner        = view.findViewById(R.id.groupBanner)
+        groupTitle         = view.findViewById(R.id.groupTitle)
+        groupSubtitle      = view.findViewById(R.id.groupSubtitle)
+        btnGroupBack       = view.findViewById(R.id.btnGroupBack)
 
-        adapter = SongAdapter(
-            onClick     = ::onSongClicked,
+        val artworkRepo = ArtworkRepository.get(requireContext())
+        songAdapter = SongAdapter(
+            onClick = ::onSongClicked,
             onLongClick = ::onSongLongClicked,
+            lifecycleScope = viewLifecycleOwner.lifecycleScope,
+            artworkRepo = artworkRepo,
         )
+        categoryAdapter = CategoryAdapter(onClick = { group ->
+            vm.enterGroup(group.key)
+        })
 
-        view.findViewById<RecyclerView>(R.id.recyclerView).apply {
-            layoutManager = LinearLayoutManager(requireContext())
-            adapter = this@LibraryFragment.adapter
-            setHasFixedSize(true)
-        }
+        recyclerSongs.layoutManager = LinearLayoutManager(requireContext())
+        recyclerSongs.adapter = songAdapter
+        recyclerSongs.setHasFixedSize(true)
+
+        recyclerCategories.layoutManager = LinearLayoutManager(requireContext())
+        recyclerCategories.adapter = categoryAdapter
+        recyclerCategories.setHasFixedSize(true)
 
         buildChips()
         fabBatch.setOnClickListener { onBatchClicked() }
+        btnGroupBack.setOnClickListener { vm.exitGroup() }
+
+        categoryTabs.addOnTabSelectedListener(object : TabLayout.OnTabSelectedListener {
+            override fun onTabSelected(tab: TabLayout.Tab) {
+                vm.setCategory(CategoryType.fromTabIndex(tab.position))
+            }
+            override fun onTabUnselected(tab: TabLayout.Tab?) {}
+            override fun onTabReselected(tab: TabLayout.Tab?) {
+                vm.exitGroup()
+            }
+        })
 
         vm.loadLibrary()
 
@@ -67,6 +112,9 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
                 launch { observeLibrary() }
                 launch { observeAnalysis() }
                 launch { observeAnalyzedCount() }
+                launch { observeCategories() }
+                launch { observeCategorySelection() }
+                launch { observeGroupSelection() }
             }
         }
 
@@ -75,12 +123,8 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Chips filtro mood
-    // ──────────────────────────────────────────────────────────────────────
     private fun buildChips() {
         chipGroup.removeAllViews()
-
         val allChip = Chip(requireContext()).apply {
             text = "Tutti"
             isCheckable = true
@@ -88,7 +132,6 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
             setOnClickListener { vm.setMoodFilter(null) }
         }
         chipGroup.addView(allChip)
-
         moodFilters.forEach { mood ->
             val chip = Chip(requireContext()).apply {
                 text = mood
@@ -101,28 +144,65 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         }
     }
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Observers
-    // ──────────────────────────────────────────────────────────────────────
     private suspend fun observeLibrary() {
         vm.library.collect { state ->
             when (state) {
                 LibraryUiState.Idle    -> Unit
                 LibraryUiState.Loading -> {
-                    progress.visibility = View.VISIBLE
-                    emptyState.visibility = View.GONE
+                    progress.isVisible = true
+                    emptyState.isVisible = false
                 }
                 is LibraryUiState.Loaded -> {
-                    progress.visibility = View.GONE
-                    adapter.submitList(state.songs)
-                    emptyState.visibility =
-                        if (state.songs.isEmpty()) View.VISIBLE else View.GONE
+                    progress.isVisible = false
+                    songAdapter.submitList(state.songs)
+                    val showSongs = vm.category.value == CategoryType.SONGS ||
+                                    vm.groupKey.value != null
+                    recyclerSongs.isVisible = showSongs
+                    if (showSongs) {
+                        emptyState.isVisible = state.songs.isEmpty()
+                    } else {
+                        emptyState.isVisible = false
+                    }
                 }
                 is LibraryUiState.Error -> {
-                    progress.visibility = View.GONE
+                    progress.isVisible = false
                     emptyState.text = "Errore: ${state.message}"
-                    emptyState.visibility = View.VISIBLE
+                    emptyState.isVisible = true
                 }
+            }
+        }
+    }
+
+    private suspend fun observeCategories() {
+        vm.categories.collect { categories ->
+            categoryAdapter.submitList(categories)
+            val showCategories = vm.category.value != CategoryType.SONGS &&
+                                 vm.groupKey.value == null
+            recyclerCategories.isVisible = showCategories
+            if (showCategories) {
+                emptyState.isVisible = categories.isEmpty()
+            }
+        }
+    }
+
+    private suspend fun observeCategorySelection() {
+        vm.category.collect { type ->
+            val isSongsTab = type == CategoryType.SONGS
+            chipScroll.isVisible = isSongsTab
+            // Reset tab UI se serve
+        }
+    }
+
+    private suspend fun observeGroupSelection() {
+        vm.groupKey.collect { key ->
+            if (key != null) {
+                groupBanner.isVisible = true
+                groupTitle.text = key
+                val n = (vm.library.value as? LibraryUiState.Loaded)?.songs?.size ?: 0
+                groupSubtitle.text = "$n brani"
+                recyclerCategories.isGone = true
+            } else {
+                groupBanner.isVisible = false
             }
         }
     }
@@ -159,22 +239,13 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
     }
 
     private fun updateBatchUi(state: WorkInfo.State?) {
-        when (state) {
-            WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> {
-                fabBatch.text = getString(R.string.batch_stop)
-                fabBatch.setIconResource(R.drawable.ic_analyze)
-            }
-            else -> {
-                fabBatch.text = getString(R.string.batch_start)
-                fabBatch.setIconResource(R.drawable.ic_analyze)
-            }
+        fabBatch.text = when (state) {
+            WorkInfo.State.RUNNING, WorkInfo.State.ENQUEUED -> getString(R.string.batch_stop)
+            else -> getString(R.string.batch_start)
         }
+        fabBatch.setIconResource(R.drawable.ic_analyze)
     }
 
-    // ──────────────────────────────────────────────────────────────────────
-    // Interazioni con i brani
-    // ──────────────────────────────────────────────────────────────────────
-    /** Tap singolo → avvia la riproduzione del brano usando la lista corrente come coda. */
     private fun onSongClicked(song: Song) {
         val currentList = (vm.library.value as? LibraryUiState.Loaded)?.songs ?: listOf(song)
         vm.playSong(song, currentList)
@@ -183,7 +254,6 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
             Snackbar.LENGTH_SHORT).show()
     }
 
-    /** Long-press → analizza il brano (cache-aware via Room). */
     private fun onSongLongClicked(song: Song) {
         vm.analyze(song)
     }
@@ -217,9 +287,7 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
             .setTitle("🎯 ${song.title}")
             .setMessage(body)
             .setPositiveButton("Chiudi", null)
-            .setNeutralButton("Riproduci") { _, _ ->
-                onSongClicked(song)
-            }
+            .setNeutralButton("Riproduci") { _, _ -> onSongClicked(song) }
             .show()
     }
 }
