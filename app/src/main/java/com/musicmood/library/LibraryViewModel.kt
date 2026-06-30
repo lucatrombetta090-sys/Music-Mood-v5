@@ -175,7 +175,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
         return if (h > 0) "%dh %02dm".format(h, m) else "%dm".format(m)
     }
 
-    fun analyze(song: Song) {
+   fun analyze(song: Song) {
         viewModelScope.launch {
             _analysis.value = AnalysisUiState.Running(song)
             val cached = moodRepo.findById(song.id)
@@ -196,26 +196,19 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             }
             val result = withContext(Dispatchers.Default) {
                 runCatching {
-                    val pcm = decoder.decodeWindow(
-                        uri        = song.uri,
-                        startMs    = (song.durationMs / 2).coerceAtLeast(0),
-                        durationMs = 30_000L,
+                    val orchestrator = com.musicmood.audio.MoodAnalysisOrchestrator(getApplication())
+                    orchestrator.analyze(
+                        uri = song.uri,
+                        title = song.title,
+                        artist = song.artist,
+                        durationMs = song.durationMs,
                     )
-                    val py = Python.getInstance()
-                    val module = py.getModule("music_analyzer")
-                    val pyResult = module.callAttr(
-                        "analyze_pcm",
-                        pcm.bytes, pcm.sampleRate, pcm.channels,
-                        pcm.durationMs.toInt(),
-                        song.title, song.artist,
-                    )
-                    MoodAnalysis.fromPy(pyResult)
                 }
             }
             _analysis.value = result.fold(
                 onSuccess = {
-                    moodRepo.save(song.id, it)
-                    AnalysisUiState.Done(song, it)
+                    moodRepo.saveWithSource(song.id, it.analysis, it.source)
+                    AnalysisUiState.Done(song, it.analysis)
                 },
                 onFailure = {
                     it.printStackTrace()
