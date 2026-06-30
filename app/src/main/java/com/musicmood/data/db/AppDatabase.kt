@@ -11,8 +11,11 @@ import androidx.room.RoomDatabase
         CalibrationEntity::class,
         ListeningEventEntity::class,
         WeeklyReportEntity::class,
+        FavoriteEntity::class,
+        AchievementEntity::class,
+        ArtworkCacheEntity::class,
     ],
-    version = 2,
+    version = 5,
     exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -21,6 +24,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun calibrationDao(): CalibrationDao
     abstract fun listeningEventDao(): ListeningEventDao
     abstract fun weeklyReportDao(): WeeklyReportDao
+    abstract fun favoriteDao(): FavoriteDao
+    abstract fun achievementDao(): AchievementDao
+    abstract fun artworkCacheDao(): ArtworkCacheDao
 
     companion object {
         @Volatile
@@ -33,7 +39,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "musicmood.db"
                 )
-                    .fallbackToDestructiveMigration()  // dato che siamo in dev
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
