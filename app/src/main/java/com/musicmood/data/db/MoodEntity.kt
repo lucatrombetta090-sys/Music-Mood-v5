@@ -13,6 +13,9 @@ data class MoodEntity(
     @ColumnInfo(name = "mood")
     val mood: String,
 
+    @ColumnInfo(name = "user_mood")
+    val userMood: String? = null,
+
     @ColumnInfo(name = "confidence")
     val confidence: Double,
 
@@ -36,7 +39,4 @@ data class MoodEntity(
 
     @ColumnInfo(name = "analyzer_version")
     val analyzerVersion: String = "v5",
-
-    @ColumnInfo(name = "source", defaultValue = "dsp")
-    val source: String = "dsp",   // "yamnet" | "dsp" | "user_override"
 )
