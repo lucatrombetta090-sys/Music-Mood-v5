@@ -28,6 +28,8 @@ import com.musicmood.R
 import com.musicmood.data.ArtworkRepository
 import com.musicmood.data.Song
 import kotlinx.coroutines.launch
+import com.musicmood.mood.MoodPickerDialog
+import androidx.appcompat.app.AlertDialog
 
 @UnstableApi
 class LibraryFragment : Fragment(R.layout.fragment_library) {
@@ -280,8 +282,42 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         Snackbar.make(requireView(), "▶ ${song.title}", Snackbar.LENGTH_SHORT).show()
     }
 
+/** Long-press → menu contestuale con analisi / cambio mood. */
     private fun onSongLongClicked(song: Song) {
-        vm.analyze(song)
+        val options = arrayOf(
+            "🎯 Analizza mood ora",
+            "🏷️ Cambia mood manualmente",
+        )
+        AlertDialog.Builder(requireContext())
+            .setTitle(song.title)
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> vm.analyze(song)
+                    1 -> showMoodPicker(song)
+                }
+            }
+            .show()
+    }
+
+    private fun showMoodPicker(song: Song) {
+        MoodPickerDialog(
+            context         = requireContext(),
+            songTitle       = song.title,
+            currentDspMood  = song.mood,
+            currentUserMood = song.userMood,
+            onPick = { moodChosen ->
+                vm.setUserMood(song.id, moodChosen)
+                Snackbar.make(requireView(),
+                    "Mood aggiornato: $moodChosen",
+                    Snackbar.LENGTH_SHORT).show()
+            },
+            onReset = {
+                vm.clearUserMood(song.id)
+                Snackbar.make(requireView(),
+                    "Mood ripristinato al valore DSP",
+                    Snackbar.LENGTH_SHORT).show()
+            },
+        ).show()
     }
 
     private fun onBatchClicked() {
