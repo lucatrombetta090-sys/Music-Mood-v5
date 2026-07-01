@@ -82,8 +82,6 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         songAdapter = SongAdapter(
             onClick = ::onSongClicked,
             onLongClick = ::onSongLongClicked,
-            lifecycleScope = viewLifecycleOwner.lifecycleScope,
-            artworkRepo = artworkRepo,
         )
         categoryAdapter = CategoryAdapter(onClick = { group ->
             vm.enterGroup(group.key)
