@@ -21,6 +21,7 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun calibrationDao(): CalibrationDao
     abstract fun listeningEventDao(): ListeningEventDao
     abstract fun weeklyReportDao(): WeeklyReportDao
+    abstract fun artworkCacheDao(): ArtworkCacheDao
 
     companion object {
         @Volatile
