@@ -15,7 +15,13 @@ import androidx.media3.common.util.UnstableApi
 import com.bumptech.glide.Glide
 import com.google.android.material.imageview.ShapeableImageView
 import com.musicmood.R
+import com.musicmood.data.ArtworkRepository
+import com.musicmood.data.MoodRepository
+import com.musicmood.library.MediaStoreRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @UnstableApi
 class MiniPlayerView @JvmOverloads constructor(
@@ -34,6 +40,11 @@ class MiniPlayerView @JvmOverloads constructor(
     private val prev: ImageButton
 
     private val controller = PlayerController.get(context)
+    private val artworkRepo = ArtworkRepository.get(context)
+    private val mediaRepo = MediaStoreRepository(context)
+
+    private var artJob: Job? = null
+    private var lastSongId: Long = -1L
 
     init {
         LayoutInflater.from(context).inflate(R.layout.view_mini_player, this, true)
@@ -44,29 +55,14 @@ class MiniPlayerView @JvmOverloads constructor(
         next      = findViewById(R.id.mpNext)
         prev      = findViewById(R.id.mpPrev)
 
-        // Click sui pulsanti
-        playPause.setOnClickListener {
-            Log.d(tag, "play/pause clicked")
-            controller.toggle()
-        }
-        next.setOnClickListener {
-            Log.d(tag, "next clicked")
-            controller.next()
-        }
-        prev.setOnClickListener {
-            Log.d(tag, "prev clicked")
-            controller.prev()
-        }
+        playPause.setOnClickListener { controller.toggle() }
+        next.setOnClickListener { controller.next() }
+        prev.setOnClickListener { controller.prev() }
 
-        // Tap su qualsiasi area NON-pulsante → apri PlayerActivity
-        val openPlayer = View.OnClickListener {
-            Log.d(tag, "tap → opening PlayerActivity")
-            openPlayerActivity()
-        }
+        val openPlayer = View.OnClickListener { openPlayerActivity() }
         art.setOnClickListener(openPlayer)
         title.setOnClickListener(openPlayer)
         artist.setOnClickListener(openPlayer)
-        // Anche click sull'area vuota della card
         setOnClickListener(openPlayer)
 
         visibility = View.GONE
@@ -74,12 +70,12 @@ class MiniPlayerView @JvmOverloads constructor(
 
     private fun openPlayerActivity() {
         try {
-            val intent = Intent(context, PlayerActivity::class.java).apply {
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            context.startActivity(intent)
+            context.startActivity(
+                Intent(context, PlayerActivity::class.java)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            )
         } catch (t: Throwable) {
-            Log.e(tag, "openPlayerActivity failed: ${t.message}", t)
+            Log.e(tag, "openPlayerActivity failed: ${t.message}")
         }
     }
 
@@ -96,10 +92,32 @@ class MiniPlayerView @JvmOverloads constructor(
                 playPause.setImageResource(
                     if (s.isPlaying) R.drawable.ic_pause else R.drawable.ic_play
                 )
+
+                // Prima carica MediaStore per feedback immediato
                 Glide.with(art)
                     .load(s.artworkUri)
                     .placeholder(R.drawable.ic_music_placeholder)
                     .into(art)
+
+                // Poi prova iTunes/Deezer cache-aware
+                val songId = s.currentSongId ?: -1L
+                if (songId > 0 && songId != lastSongId) {
+                    lastSongId = songId
+                    artJob?.cancel()
+                    artJob = owner.lifecycleScope.launch {
+                        val remoteUrl = withContext(Dispatchers.IO) {
+                            runCatching {
+                                artworkRepo.getOrFetch(songId, s.title, s.artist)
+                            }.getOrNull()
+                        }
+                        if (remoteUrl != null) {
+                            Glide.with(art)
+                                .load(remoteUrl)
+                                .placeholder(R.drawable.ic_music_placeholder)
+                                .into(art)
+                        }
+                    }
+                }
             }
         }
     }
