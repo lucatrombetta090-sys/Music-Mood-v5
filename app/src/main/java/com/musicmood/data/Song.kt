@@ -11,6 +11,12 @@ data class Song(
     val durationMs: Long,
     val albumArtUri: Uri?,
     val mimeType: String,
+    
+    // ✅ AGGIUNGERE QUESTI
+    val genre: String? = null,
+    val year: Int? = null,
+    val folderPath: String? = null
+
 
     val mood: String? = null,          // mood DSP originale
     val userMood: String? = null,      // override manuale
