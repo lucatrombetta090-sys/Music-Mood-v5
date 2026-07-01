@@ -83,7 +83,7 @@ class MoodAnalysisWorker(
                     artist = song.artist,
                     durationMs = song.durationMs,
                 )
-                moodRepo.saveWithSource(song.id, result.analysis, result.source)
+               moodRepo.save(song.id, result.analysis)
                 if (result.source == "yamnet") yamnetCount++ else dspCount++
             } catch (e: OutOfMemoryError) {
                 Log.e(tag, "OOM su ${song.title}", e)
