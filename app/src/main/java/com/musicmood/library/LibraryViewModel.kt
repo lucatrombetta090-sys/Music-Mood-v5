@@ -328,4 +328,24 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
     fun clearAllAnalysis() {
         viewModelScope.launch { moodRepo.clearAll() }
     }
+
+    // ──────────────────────────────────────────────────────────────────────
+    // Mood manuale (override utente)
+    // ──────────────────────────────────────────────────────────────────────
+    fun setUserMood(songId: Long, mood: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                moodRepo.setUserMood(songId, mood)
+            }
+            // Il Flow observeAll re-emette e libraryFragment riceve refresh automatico
+        }
+    }
+
+    fun clearUserMood(songId: Long) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) {
+                moodRepo.clearUserMood(songId)
+            }
+        }
+    }
 }
