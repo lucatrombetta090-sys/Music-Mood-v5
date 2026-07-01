@@ -1,4 +1,4 @@
-package com.musicmood.data.db
+package com.musicmood.data
 
 import android.content.Context
 import androidx.room.Database
@@ -6,38 +6,28 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 
 @Database(
-    entities = [
-        MoodEntity::class,
-        CalibrationEntity::class,
-        ListeningEventEntity::class,
-        WeeklyReportEntity::class,
-    ],
-    version = 4,
-    exportSchema = false,
+    entities = [ArtworkCacheEntity::class],
+    version = 1
 )
 abstract class AppDatabase : RoomDatabase() {
 
-    abstract fun moodDao(): MoodDao
-    abstract fun calibrationDao(): CalibrationDao
-    abstract fun listeningEventDao(): ListeningEventDao
-    abstract fun weeklyReportDao(): WeeklyReportDao
+    abstract fun artworkCacheDao(): ArtworkCacheDao
 
     companion object {
         @Volatile
         private var INSTANCE: AppDatabase? = null
 
-        fun get(context: Context): AppDatabase {
+        fun getDatabase(context: Context): AppDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "musicmood.db"
-                )
-                    .fallbackToDestructiveMigration()
-                    .build()
+                    "music_mood_db"
+                ).build()
                 INSTANCE = instance
                 instance
             }
         }
     }
 }
+``
