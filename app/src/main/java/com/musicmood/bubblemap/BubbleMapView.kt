@@ -7,11 +7,7 @@ import android.view.GestureDetector
 import android.view.MotionEvent
 import android.view.ScaleGestureDetector
 import android.view.View
-import androidx.core.content.ContextCompat
-import com.musicmood.R
-import kotlin.math.cos
 import kotlin.math.min
-import kotlin.math.sin
 import kotlin.math.sqrt
 
 class BubbleMapView @JvmOverloads constructor(
@@ -33,7 +29,6 @@ class BubbleMapView @JvmOverloads constructor(
     private val bubbles = mutableListOf<Bubble>()
     private var onBubbleTap: ((Bubble) -> Unit)? = null
 
-    private val bgPaint   = Paint(Paint.ANTI_ALIAS_FLAG)
     private val axisPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = 0x88B3A8D9.toInt(); strokeWidth = 2f
     }
@@ -41,16 +36,16 @@ class BubbleMapView @JvmOverloads constructor(
         color = 0x33B3A8D9.toInt(); strokeWidth = 1f
     }
     private val labelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFB3A8D9.toInt()  // text_secondary chiaro
+        color = 0xFFB3A8D9.toInt()
         textSize = sp(11f)
         isFakeBoldText = true
     }
     private val moodLabelPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = 0xFFFFFFFF.toInt()  // bianco pieno
+        color = 0xFFFFFFFF.toInt()
         textSize = sp(14f)
         isFakeBoldText = true
         textAlign = Paint.Align.CENTER
-        setShadowLayer(4f, 0f, 0f, 0xCC000000.toInt())  // ombra per leggibilità
+        setShadowLayer(4f, 0f, 0f, 0xCC000000.toInt())
     }
     private val bubblePaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
@@ -97,10 +92,6 @@ class BubbleMapView @JvmOverloads constructor(
         }
     )
 
-    init {
-        bgPaint.color = ContextCompat.getColor(context, android.R.color.transparent)
-    }
-
     fun setBubbles(items: List<Bubble>) {
         bubbles.clear(); bubbles.addAll(items); invalidate()
     }
@@ -135,14 +126,16 @@ class BubbleMapView @JvmOverloads constructor(
         moodAnchors.forEach { (label, v, a) ->
             val x = cx + v * r
             val y = cy - a * r
-            canvas.drawText(label, x, y - dp(16f), moodLabelPaint)
+            canvas.drawText(label, x, y - dp(20f), moodLabelPaint)
         }
 
+        // Bolle: alpha 0x99 semi-trasparente → sovrapposizioni si vedono come cluster più scuri
+        val bubbleRadius = dp(4.5f)
         bubbles.forEach { b ->
             val x = cx + b.valence * r
             val y = cy - b.arousal * r
-            bubblePaint.color = (b.color and 0x00FFFFFF) or 0xCC000000.toInt()
-            canvas.drawCircle(x, y, dp(5f), bubblePaint)
+            bubblePaint.color = (b.color and 0x00FFFFFF) or 0x99000000.toInt()
+            canvas.drawCircle(x, y, bubbleRadius, bubblePaint)
         }
     }
 
