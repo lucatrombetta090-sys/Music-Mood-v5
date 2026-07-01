@@ -11,19 +11,19 @@ data class Song(
     val durationMs: Long,
     val albumArtUri: Uri?,
     val mimeType: String,
-    
-    // ✅ AGGIUNGERE QUESTI
+
+    // ✅ NUOVI CAMPI
     val genre: String? = null,
     val year: Int? = null,
-    val folderPath: String? = null
+    val folderPath: String? = null,
 
-
-    val mood: String? = null,          // mood DSP originale
-    val userMood: String? = null,      // override manuale
+    // ✅ MOOD ENGINE
+    val mood: String? = null,
+    val userMood: String? = null,
     val confidence: Double? = null,
     val valence: Double? = null,
     val arousal: Double? = null,
-    val tempoBpm: Double? = null,
+    val tempoBpm: Double? = null
 ) {
     val durationFormatted: String
         get() {
@@ -33,11 +33,10 @@ data class Song(
             return "%d:%02d".format(min, sec)
         }
 
-    /** Il mood effettivo mostrato ovunque: userMood ha priorità sul mood DSP. */
     val effectiveMood: String?
         get() = userMood ?: mood
 
-    /** True se l'utente ha applicato un override manuale. */
     val hasUserOverride: Boolean
         get() = userMood != null
 }
+``
