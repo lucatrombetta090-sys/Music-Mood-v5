@@ -15,6 +15,7 @@ import androidx.room.RoomDatabase
     version = 4,
     exportSchema = false,
 )
+
 abstract class AppDatabase : RoomDatabase() {
 
     abstract fun moodDao(): MoodDao
