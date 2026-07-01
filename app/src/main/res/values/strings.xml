@@ -124,4 +124,7 @@
     <string name="settings_yamnet_title">🤖 Classificatore avanzato</string>
     <string name="settings_yamnet_switch">Usa YAMNet (TFLite)</string>
     <string name="settings_yamnet_desc">Modello deep learning di Google per riconoscimento mood. Più accurato del DSP, soprattutto per dance/pop. Il DSP rimane attivo come fallback.</string>
+    <!-- Mood manuali -->
+    <string name="mood_picker_title">Cambia mood</string>
+    <string name="mood_picker_reset">Reset al DSP</string>
 </resources>
