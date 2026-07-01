@@ -9,40 +9,35 @@ import com.musicmood.audio.yamnet.YamnetMoodClassifier
 import com.musicmood.audio.yamnet.YamnetMoodMapper
 import com.musicmood.data.SettingsRepository
 
-/**
- * Tenta YAMNet → se confidenza adeguata, usa quel risultato.
- * Altrimenti fa fallback al DSP Python.
- *
- * @return Pair(analysis, source) dove source è "yamnet" o "dsp"
- */
 class MoodAnalysisOrchestrator(private val context: Context) {
 
     private val tag = "MoodOrchestrator"
-
     private val decoder = AudioDecoder(context)
     private val settings = SettingsRepository.get(context)
-
-    /** Soglia minima di confidenza YAMNet per accettare il risultato. */
     private val yamnetMinConfidence = 0.08f
+
+    /** Centroidi di riferimento (valence, arousal, tempo_norm) per ogni mood. */
+    private val moodCentroids = mapOf(
+        "Energico"       to Triple( 0.55,  0.85, 0.80),
+        "Festivo"        to Triple( 0.75,  0.70, 0.75),
+        "Positivo"       to Triple( 0.70,  0.30, 0.55),
+        "Aggressivo"     to Triple(-0.35,  0.85, 0.80),
+        "Concentrazione" to Triple( 0.10,  0.10, 0.45),
+        "Rilassato"      to Triple( 0.40, -0.40, 0.30),
+        "Romantico"      to Triple( 0.45, -0.20, 0.40),
+        "Nostalgico"     to Triple(-0.15, -0.30, 0.35),
+        "Malinconico"    to Triple(-0.55, -0.55, 0.25),
+    )
 
     data class Result(
         val analysis: MoodAnalysis,
-        val source: String,    // "yamnet" o "dsp"
+        val source: String,
     )
 
-    /**
-     * Analizza una finestra del brano. Prova YAMNet, fallback DSP.
-     */
-    fun analyze(
-        uri: Uri,
-        title: String,
-        artist: String,
-        durationMs: Long,
-    ): Result {
+    fun analyze(uri: Uri, title: String, artist: String, durationMs: Long): Result {
         val startMs = (durationMs / 2).coerceAtLeast(0)
         val analysisWindowMs = settings.analysisWindowSec * 1000L
 
-        // ─── Tentativo 1: YAMNet ───
         if (settings.useYamnet) {
             try {
                 val pcm16k = decoder.decodeFloat16k(uri, startMs, analysisWindowMs)
@@ -52,8 +47,6 @@ class MoodAnalysisOrchestrator(private val context: Context) {
                     if (pred.confidence >= yamnetMinConfidence) {
                         val analysis = buildAnalysisFromYamnet(pred)
                         return Result(analysis, "yamnet")
-                    } else {
-                        Log.d(tag, "YAMNet confidence too low (${pred.confidence}), fallback to DSP")
                     }
                 }
             } catch (t: Throwable) {
@@ -61,44 +54,43 @@ class MoodAnalysisOrchestrator(private val context: Context) {
             }
         }
 
-        // ─── Fallback: DSP Python ───
         return Result(analyzeWithDsp(uri, startMs, analysisWindowMs, title, artist), "dsp")
     }
 
+    /**
+     * Calcola valenza/arousal come WEIGHTED AVERAGE dei centroidi mood
+     * pesati con i punteggi YAMNet. Così ogni brano ha coordinate distinte
+     * e la BubbleMap si distribuisce naturalmente.
+     */
     private fun buildAnalysisFromYamnet(pred: YamnetMoodMapper.Prediction): MoodAnalysis {
-        // YAMNet non ci dà valenza/arousal/BPM esplicite; stimo da mood per coerenza UI
-        val (valence, arousal) = synthCoordsForMood(pred.mood)
+        val scores = pred.rawScores
+        val totalScore = scores.values.sum().coerceAtLeast(0.001f).toDouble()
+
+        var wVal = 0.0
+        var wAr = 0.0
+        for ((mood, score) in scores) {
+            val centroid = moodCentroids[mood] ?: continue
+            val weight = score.toDouble()
+            wVal += centroid.first * weight
+            wAr += centroid.second * weight
+        }
+        val valence = (wVal / totalScore).coerceIn(-1.0, 1.0)
+        val arousal = (wAr / totalScore).coerceIn(-1.0, 1.0)
+
         return MoodAnalysis(
             mood = pred.mood,
             confidence = pred.confidence.toDouble(),
             valence = valence,
             arousal = arousal,
-            tempoBpm = 0.0,        // non disponibile da YAMNet
+            tempoBpm = 0.0,
             key = "C",
             mode = "major",
         )
     }
 
-    /** Coordinate (valence, arousal) "tipiche" del centroide per popolare la BubbleMap. */
-    private fun synthCoordsForMood(mood: String): Pair<Double, Double> = when (mood) {
-        "Energico"        -> 0.55 to 0.85
-        "Festivo"         -> 0.75 to 0.70
-        "Positivo"        -> 0.70 to 0.30
-        "Aggressivo"      -> -0.35 to 0.85
-        "Concentrazione"  -> 0.10 to 0.10
-        "Rilassato"       -> 0.40 to -0.40
-        "Romantico"       -> 0.45 to -0.20
-        "Nostalgico"      -> -0.15 to -0.30
-        "Malinconico"     -> -0.55 to -0.55
-        else              -> 0.0 to 0.0
-    }
-
     private fun analyzeWithDsp(
-        uri: Uri,
-        startMs: Long,
-        durationMs: Long,
-        title: String,
-        artist: String,
+        uri: Uri, startMs: Long, durationMs: Long,
+        title: String, artist: String,
     ): MoodAnalysis {
         val pcm = decoder.decodeWindow(uri, startMs, durationMs)
         val py = Python.getInstance()
