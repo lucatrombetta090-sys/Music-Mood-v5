@@ -2,25 +2,18 @@ package com.musicmood.data
 
 import android.net.Uri
 
-/**
- * Modello di dominio di un brano della libreria locale.
- * Le feature mood (mood, valence, arousal) sono popolate dopo l'analisi DSP.
- */
 data class Song(
     val id: Long,
     val uri: Uri,
     val title: String,
     val artist: String,
     val album: String,
-    val genre: String? = null,    // ← verifica/aggiungi
-    val year: Int? = null,        // ← verifica/aggiungi
     val durationMs: Long,
-    val albumArtUri: android.net.Uri? = null,
+    val albumArtUri: Uri?,
     val mimeType: String,
-    val folderPath: String? = null,  // opzionale
 
-    // Risultati dell'analisi (null finché non analizzato)
-    val mood: String? = null,
+    val mood: String? = null,          // mood DSP originale
+    val userMood: String? = null,      // override manuale
     val confidence: Double? = null,
     val valence: Double? = null,
     val arousal: Double? = null,
@@ -33,4 +26,13 @@ data class Song(
             val sec = totalSec % 60
             return "%d:%02d".format(min, sec)
         }
+
+    /** Il mood effettivo mostrato ovunque: userMood ha priorità sul mood DSP. */
+    val effectiveMood: String?
+        get() = userMood ?: mood
+
+    /** True se l'utente ha applicato un override manuale. */
+    val hasUserOverride: Boolean
+        get() = userMood != null
 }
+``
