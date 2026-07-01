@@ -24,6 +24,12 @@ interface MoodDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entity: MoodEntity)
 
+    @Query("UPDATE mood_analysis SET user_mood = :userMood WHERE song_id = :songId")
+    suspend fun setUserMood(songId: Long, userMood: String?): Int
+
+    @Query("UPDATE mood_analysis SET user_mood = NULL WHERE song_id = :songId")
+    suspend fun clearUserMood(songId: Long): Int
+
     @Query("DELETE FROM mood_analysis WHERE song_id = :songId")
     suspend fun delete(songId: Long)
 
@@ -32,4 +38,7 @@ interface MoodDao {
 
     @Query("SELECT COUNT(*) FROM mood_analysis")
     fun observeCount(): Flow<Int>
+
+    @Query("SELECT COUNT(*) FROM mood_analysis WHERE user_mood IS NOT NULL")
+    fun observeUserMoodCount(): Flow<Int>
 }
