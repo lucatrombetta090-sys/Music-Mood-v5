@@ -297,7 +297,7 @@ class LibraryViewModel(app: Application) : AndroidViewModel(app) {
             }
             _analysis.value = result.fold(
                 onSuccess = {
-                    moodRepo.saveWithSource(song.id, it.analysis, it.source)
+                    moodRepo.save(song.id, it.analysis)
                     AnalysisUiState.Done(song, it.analysis)
                 },
                 onFailure = {
