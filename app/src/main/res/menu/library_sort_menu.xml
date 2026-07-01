@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:checkableBehavior="single">
+        <item
+            android:id="@+id/sort_az"
+            android:title="A → Z"
+            android:checked="true" />
+        <item
+            android:id="@+id/sort_za"
+            android:title="Z → A" />
+        <item
+            android:id="@+id/sort_count_desc"
+            android:title="Più brani prima" />
+        <item
+            android:id="@+id/sort_count_asc"
+            android:title="Meno brani prima" />
+    </group>
+</menu>
