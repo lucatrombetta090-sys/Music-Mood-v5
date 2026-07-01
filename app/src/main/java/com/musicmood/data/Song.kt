@@ -12,12 +12,16 @@ data class Song(
     val albumArtUri: Uri?,
     val mimeType: String,
 
-    // ✅ NUOVI CAMPI
+    // Categorie libreria
     val genre: String? = null,
     val year: Int? = null,
     val folderPath: String? = null,
 
-    // ✅ MOOD ENGINE
+    // Artwork remoto risolto da ArtworkRepository.
+    // Esempio: URL iTunes / Deezer.
+    val artworkUrl: String? = null,
+
+    // Mood engine
     val mood: String? = null,
     val userMood: String? = null,
     val confidence: Double? = null,
@@ -38,4 +42,14 @@ data class Song(
 
     val hasUserOverride: Boolean
         get() = userMood != null
+
+    /**
+     * Copertina preferita da usare in UI.
+     *
+     * Priorità:
+     * 1. artworkUrl remoto, se disponibile
+     * 2. albumArtUri locale, se disponibile
+     */
+    val preferredArtwork: A*y?
+        get() = artworkUrl ?: a*bumArtUri
 }
