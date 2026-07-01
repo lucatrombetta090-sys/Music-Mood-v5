@@ -3,12 +3,7 @@ package com.musicmood.library
 import com.musicmood.data.Song
 
 enum class CategoryType {
-    SONGS,    // tutti i brani
-    ARTISTS,  // per artista
-    ALBUMS,   // per album
-    GENRES,   // per genere
-    YEARS,    // per anno
-    FOLDERS;  // per cartella di provenienza
+    SONGS, ARTISTS, ALBUMS, GENRES, YEARS, FOLDERS;
 
     companion object {
         fun fromTabIndex(i: Int): CategoryType = when (i) {
@@ -22,9 +17,10 @@ enum class CategoryType {
     }
 }
 
-/**
- * Modello di un raggruppamento (artista, album, genere, anno, cartella).
- */
+enum class SortOrder {
+    AZ, ZA, COUNT_DESC, COUNT_ASC;
+}
+
 data class CategoryGroup(
     val key: String,
     val title: String,
@@ -32,4 +28,8 @@ data class CategoryGroup(
     val songCount: Int,
     val totalDurationMs: Long,
     val coverSong: Song?,
+    /** Path completo per navigation nested (usato dai folder). */
+    val fullPath: String? = null,
+    /** True se questo group è un "folder" navigabile in cui si può entrare. */
+    val isNavigable: Boolean = false,
 )
