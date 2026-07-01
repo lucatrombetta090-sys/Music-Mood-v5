@@ -3,9 +3,9 @@ package com.musicmood.library
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
+import android.widget.PopupMenu
 import android.widget.ProgressBar
 import android.widget.TextView
-import androidx.core.view.isGone
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -72,6 +72,10 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         groupSubtitle      = view.findViewById(R.id.groupSubtitle)
         btnGroupBack       = view.findViewById(R.id.btnGroupBack)
 
+        // Long-press sul counter → mostra menu sort ordinamento
+        counter.setOnClickListener { showSortMenu(counter) }
+        counter.setOnLongClickListener { showSortMenu(counter); true }
+
         val artworkRepo = ArtworkRepository.get(requireContext())
         songAdapter = SongAdapter(
             onClick = ::onSongClicked,
@@ -115,12 +119,36 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
                 launch { observeCategories() }
                 launch { observeCategorySelection() }
                 launch { observeGroupSelection() }
+                launch { observeFolderPathStack() }
             }
         }
 
         vm.batchWorkInfo.observe(viewLifecycleOwner) { infos ->
             updateBatchUi(infos?.firstOrNull()?.state)
         }
+    }
+
+    private fun showSortMenu(anchor: View) {
+        val popup = PopupMenu(requireContext(), anchor)
+        popup.menuInflater.inflate(R.menu.library_sort_menu, popup.menu)
+        val currentOrder = vm.sortOrder.value
+        popup.menu.findItem(R.id.sort_az).isChecked = currentOrder == SortOrder.AZ
+        popup.menu.findItem(R.id.sort_za).isChecked = currentOrder == SortOrder.ZA
+        popup.menu.findItem(R.id.sort_count_desc).isChecked = currentOrder == SortOrder.COUNT_DESC
+        popup.menu.findItem(R.id.sort_count_asc).isChecked = currentOrder == SortOrder.COUNT_ASC
+
+        popup.setOnMenuItemClickListener { item ->
+            val newOrder = when (item.itemId) {
+                R.id.sort_az -> SortOrder.AZ
+                R.id.sort_za -> SortOrder.ZA
+                R.id.sort_count_desc -> SortOrder.COUNT_DESC
+                R.id.sort_count_asc -> SortOrder.COUNT_ASC
+                else -> return@setOnMenuItemClickListener false
+            }
+            vm.setSortOrder(newOrder)
+            true
+        }
+        popup.show()
     }
 
     private fun buildChips() {
@@ -147,7 +175,7 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
     private suspend fun observeLibrary() {
         vm.library.collect { state ->
             when (state) {
-                LibraryUiState.Idle    -> Unit
+                LibraryUiState.Idle -> Unit
                 LibraryUiState.Loading -> {
                     progress.isVisible = true
                     emptyState.isVisible = false
@@ -155,14 +183,13 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
                 is LibraryUiState.Loaded -> {
                     progress.isVisible = false
                     songAdapter.submitList(state.songs)
-                    val showSongs = vm.category.value == CategoryType.SONGS ||
-                                    vm.groupKey.value != null
-                    recyclerSongs.isVisible = showSongs
-                    if (showSongs) {
-                        emptyState.isVisible = state.songs.isEmpty()
-                    } else {
-                        emptyState.isVisible = false
-                    }
+                    val showSongs = state.songs.isNotEmpty() ||
+                            (vm.category.value == CategoryType.SONGS ||
+                                    vm.groupKey.value != null ||
+                                    vm.folderPathStack.value.isNotEmpty())
+                    recyclerSongs.isVisible = state.songs.isNotEmpty()
+                    emptyState.isVisible = state.songs.isEmpty() &&
+                            vm.categories.value.isEmpty()
                 }
                 is LibraryUiState.Error -> {
                     progress.isVisible = false
@@ -176,32 +203,36 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
     private suspend fun observeCategories() {
         vm.categories.collect { categories ->
             categoryAdapter.submitList(categories)
-            val showCategories = vm.category.value != CategoryType.SONGS &&
-                                 vm.groupKey.value == null
-            recyclerCategories.isVisible = showCategories
-            if (showCategories) {
-                emptyState.isVisible = categories.isEmpty()
-            }
+            recyclerCategories.isVisible = categories.isNotEmpty()
         }
     }
 
     private suspend fun observeCategorySelection() {
         vm.category.collect { type ->
-            val isSongsTab = type == CategoryType.SONGS
-            chipScroll.isVisible = isSongsTab
-            // Reset tab UI se serve
+            chipScroll.isVisible = (type == CategoryType.SONGS)
         }
     }
 
     private suspend fun observeGroupSelection() {
         vm.groupKey.collect { key ->
-            if (key != null) {
+            if (key != null && vm.category.value != CategoryType.FOLDERS) {
                 groupBanner.isVisible = true
                 groupTitle.text = key
                 val n = (vm.library.value as? LibraryUiState.Loaded)?.songs?.size ?: 0
                 groupSubtitle.text = "$n brani"
-                recyclerCategories.isGone = true
-            } else {
+            } else if (vm.folderPathStack.value.isEmpty()) {
+                groupBanner.isVisible = false
+            }
+        }
+    }
+
+    private suspend fun observeFolderPathStack() {
+        vm.folderPathStack.collect { stack ->
+            if (stack.isNotEmpty()) {
+                groupBanner.isVisible = true
+                groupTitle.text = stack.last()
+                groupSubtitle.text = "📁 " + stack.joinToString(" / ")
+            } else if (vm.groupKey.value == null) {
                 groupBanner.isVisible = false
             }
         }
@@ -211,18 +242,16 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
         vm.analysis.collect { state ->
             when (state) {
                 AnalysisUiState.Idle -> Unit
-                is AnalysisUiState.Running -> {
-                    Snackbar.make(requireView(),
-                        "Analisi: ${state.song.title}…",
-                        Snackbar.LENGTH_SHORT).show()
-                }
+                is AnalysisUiState.Running -> Snackbar.make(
+                    requireView(), "Analisi: ${state.song.title}…",
+                    Snackbar.LENGTH_SHORT
+                ).show()
                 is AnalysisUiState.Done -> {
                     showResultDialog(state.song, state.result)
                     vm.resetAnalysisState()
                 }
                 is AnalysisUiState.Failed -> {
-                    Snackbar.make(requireView(),
-                        "Errore: ${state.message}",
+                    Snackbar.make(requireView(), "Errore: ${state.message}",
                         Snackbar.LENGTH_LONG).show()
                     vm.resetAnalysisState()
                 }
@@ -232,9 +261,8 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
 
     private suspend fun observeAnalyzedCount() {
         vm.analyzedCount.collect { count ->
-            val current = vm.library.value
-            val total = (current as? LibraryUiState.Loaded)?.songs?.size ?: 0
-            counter.text = "$total brani • $count analizzati"
+            val total = (vm.library.value as? LibraryUiState.Loaded)?.songs?.size ?: 0
+            counter.text = "$total brani • $count analizzati  ⋮"
         }
     }
 
@@ -249,9 +277,7 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
     private fun onSongClicked(song: Song) {
         val currentList = (vm.library.value as? LibraryUiState.Loaded)?.songs ?: listOf(song)
         vm.playSong(song, currentList)
-        Snackbar.make(requireView(),
-            "▶ ${song.title}",
-            Snackbar.LENGTH_SHORT).show()
+        Snackbar.make(requireView(), "▶ ${song.title}", Snackbar.LENGTH_SHORT).show()
     }
 
     private fun onSongLongClicked(song: Song) {
@@ -261,15 +287,13 @@ class LibraryFragment : Fragment(R.layout.fragment_library) {
     private fun onBatchClicked() {
         val info = vm.batchWorkInfo.value?.firstOrNull()
         val running = info?.state == WorkInfo.State.RUNNING ||
-                      info?.state == WorkInfo.State.ENQUEUED
+                info?.state == WorkInfo.State.ENQUEUED
         if (running) {
             vm.cancelBatchAnalysis()
-            Snackbar.make(requireView(), R.string.batch_cancelled,
-                Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(requireView(), R.string.batch_cancelled, Snackbar.LENGTH_SHORT).show()
         } else {
             vm.startBatchAnalysis()
-            Snackbar.make(requireView(), R.string.batch_started,
-                Snackbar.LENGTH_SHORT).show()
+            Snackbar.make(requireView(), R.string.batch_started, Snackbar.LENGTH_SHORT).show()
         }
     }
 
