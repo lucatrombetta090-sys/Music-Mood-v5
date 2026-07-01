@@ -19,12 +19,17 @@ import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.slider.Slider
 import com.google.android.material.snackbar.Snackbar
 import com.musicmood.R
+import com.musicmood.data.ArtworkRepository
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 @UnstableApi
 class PlayerActivity : AppCompatActivity() {
 
     private val vm: PlayerViewModel by viewModels()
+    private lateinit var artworkRepo: ArtworkRepository
 
     private lateinit var artwork: ShapeableImageView
     private lateinit var title: TextView
@@ -36,12 +41,16 @@ class PlayerActivity : AppCompatActivity() {
     private lateinit var btnPlayPause: FloatingActionButton
 
     private var isSeeking = false
+    private var artJob: Job? = null
+    private var lastSongId: Long = -1L
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setTheme(R.style.Theme_MusicMood_Player)
         WindowCompat.setDecorFitsSystemWindows(window, false)
         setContentView(R.layout.activity_player)
+
+        artworkRepo = ArtworkRepository.get(this)
 
         artwork      = findViewById(R.id.artworkBig)
         title        = findViewById(R.id.songTitle)
@@ -94,10 +103,31 @@ class PlayerActivity : AppCompatActivity() {
                         btnPlayPause.setImageResource(
                             if (s.isPlaying) R.drawable.ic_pause else R.drawable.ic_play
                         )
+                        // Prima MediaStore
                         Glide.with(artwork)
                             .load(s.artworkUri)
                             .placeholder(R.drawable.ic_music_placeholder)
                             .into(artwork)
+
+                        // Poi remote artwork
+                        val songId = s.currentSongId ?: -1L
+                        if (songId > 0 && songId != lastSongId) {
+                            lastSongId = songId
+                            artJob?.cancel()
+                            artJob = lifecycleScope.launch {
+                                val remoteUrl = withContext(Dispatchers.IO) {
+                                    runCatching {
+                                        artworkRepo.getOrFetch(songId, s.title, s.artist)
+                                    }.getOrNull()
+                                }
+                                if (remoteUrl != null) {
+                                    Glide.with(artwork)
+                                        .load(remoteUrl)
+                                        .placeholder(R.drawable.ic_music_placeholder)
+                                        .into(artwork)
+                                }
+                            }
+                        }
                     }
                 }
                 launch {
