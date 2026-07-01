@@ -17,5 +17,5 @@ data class ArtworkCacheEntity(
     val source: String,        // "itunes" | "deezer" | "miss"
 
     @ColumnInfo(name = "fetched_at")
-    val fetchedAt: Long = System.currentTimeMillis(),
+    val fetchedAt: Long = System.currentTimeMillis()
 )
