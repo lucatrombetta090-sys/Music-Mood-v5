@@ -11,8 +11,9 @@ import androidx.room.RoomDatabase
         CalibrationEntity::class,
         ListeningEventEntity::class,
         WeeklyReportEntity::class,
+        ArtworkCacheEntity::class,
     ],
-    version = 4,
+    version = 6,
     exportSchema = false,
 )
 
