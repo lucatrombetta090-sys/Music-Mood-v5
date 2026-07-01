@@ -66,6 +66,7 @@ class PlayerController private constructor(private val context: Context) {
             artist       = item?.mediaMetadata?.artist?.toString().orEmpty(),
             artworkUri   = item?.mediaMetadata?.artworkUri,
             hasItem      = item != null,
+            currentSongId = item?.mediaId?.toLongOrNull(),
         )
     }
 
@@ -134,13 +135,14 @@ class PlayerController private constructor(private val context: Context) {
             .build()
     }
 
-    data class PlaybackUiState(
-        val isPlaying: Boolean = false,
-        val title: String = "",
-        val artist: String = "",
-        val artworkUri: Uri? = null,
-        val hasItem: Boolean = false,
-    )
+data class PlaybackUiState(
+    val isPlaying: Boolean = false,
+    val title: String = "",
+    val artist: String = "",
+    val artworkUri: Uri? = null,
+    val hasItem: Boolean = false,
+    val currentSongId: Long? = null,   // ✅ AGGIUNTO
+)
 
     companion object {
         @Volatile private var INSTANCE: PlayerController? = null
