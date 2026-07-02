@@ -37,7 +37,12 @@ class PlayerController private constructor(private val context: Context) {
             context.applicationContext,
             ComponentName(context.applicationContext, PlaybackService::class.java)
         )
-        val future = MediaController.Builder(context.applicationContext, token).buildAsync()
+
+        val future = MediaController.Builder(
+            context.applicationContext,
+            token
+        ).buildAsync()
+
         future.addListener({
             controller = future.get()
             attachListener()
@@ -47,51 +52,81 @@ class PlayerController private constructor(private val context: Context) {
 
     private fun attachListener() {
         val listener = object : Player.Listener {
+
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
                 syncState()
                 mediaItem?.let { logListeningEvent(it) }
             }
-            override fun onIsPlayingChanged(isPlaying: Boolean) = syncState()
-            override fun onPlaybackStateChanged(playbackState: Int) = syncState()
+
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
+                syncState()
+            }
+
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                syncState()
+            }
         }
+
         controller?.addListener(listener)
     }
 
     private fun syncState() {
         val c = controller ?: return
         val item = c.currentMediaItem
+
         _state.value = PlaybackUiState(
-            isPlaying    = c.isPlaying,
-            title        = item?.mediaMetadata?.title?.toString().orEmpty(),
-            artist       = item?.mediaMetadata?.artist?.toString().orEmpty(),
-            artworkUri   = item?.mediaMetadata?.artworkUri,
-            hasItem      = item != null,
-            currentSongId = item?.mediaId?.toLongOrNull(),
+            isPlaying = c.isPlaying,
+            title = item?.mediaMetadata?.title?.toString().orEmpty(),
+            artist = item?.mediaMetadata?.artist?.toString().orEmpty(),
+            artworkUri = item?.mediaMetadata?.artworkUri,
+            hasItem = item != null,
+            currentSongId = item?.mediaId?.toLongOrNull()
         )
     }
 
     private fun logListeningEvent(item: MediaItem) {
         val songId = item.mediaId.toLongOrNull() ?: return
         val mood = songMoodCache[songId] ?: return
+
         scope.launch {
             AppDatabase.get(context).listeningEventDao().insert(
-                ListeningEventEntity(songId = songId, mood = mood)
+                ListeningEventEntity(
+                    songId = songId,
+                    mood = mood
+                )
             )
         }
     }
 
-    fun playSong(song: Song, queue: List<Song> = listOf(song)) {
+    fun playSong(
+        song: Song,
+        queue: List<Song> = listOf(song)
+    ) {
         val c = controller ?: return
-        queue.forEach { it.mood?.let { m -> songMoodCache[it.id] = m } }
+
+        queue.forEach { queuedSong ->
+            queuedSong.effectiveMood?.let { mood ->
+                songMoodCache[queuedSong.id] = mood
+            }
+        }
+
         val items = queue.map { it.toMediaItem() }
-        val startIndex = queue.indexOf(song).coerceAtLeast(0)
+
+        val startIndex = queue
+            .indexOfFirst { it.id == song.id }
+            .coerceAtLeast(0)
+
         c.setMediaItems(items, startIndex, 0L)
         c.prepare()
         c.play()
-        song.mood?.let { mood ->
+
+        song.effectiveMood?.let { mood ->
             scope.launch {
                 AppDatabase.get(context).listeningEventDao().insert(
-                    ListeningEventEntity(songId = song.id, mood = mood)
+                    ListeningEventEntity(
+                        songId = song.id,
+                        mood = mood
+                    )
                 )
             }
         }
@@ -99,22 +134,37 @@ class PlayerController private constructor(private val context: Context) {
 
     fun toggle() {
         val c = controller ?: return
-        if (c.isPlaying) c.pause() else c.play()
+        if (c.isPlaying) {
+            c.pause()
+        } else {
+            c.play()
+        }
     }
 
-    fun next() { controller?.seekToNext() }
-    fun prev() { controller?.seekToPrevious() }
-    fun seekTo(positionMs: Long) { controller?.seekTo(positionMs) }
+    fun next() {
+        controller?.seekToNext()
+    }
 
-    fun getProgress(): com.musicmood.player.PlayerProgress {
-        val c = controller ?: return com.musicmood.player.PlayerProgress(0L, 0L)
-        return com.musicmood.player.PlayerProgress(
+    fun prev() {
+        controller?.seekToPrevious()
+    }
+
+    fun seekTo(positionMs: Long) {
+        controller?.seekTo(positionMs)
+    }
+
+    fun getProgress(): PlayerProgress {
+        val c = controller ?: return PlayerProgress(0L, 0L)
+
+        return PlayerProgress(
             positionMs = c.currentPosition.coerceAtLeast(0L),
-            durationMs = c.duration.coerceAtLeast(0L),
+            durationMs = c.duration.coerceAtLeast(0L)
         )
     }
 
-    fun currentSongId(): Long? = controller?.currentMediaItem?.mediaId?.toLongOrNull()
+    fun currentSongId(): Long? {
+        return controller?.currentMediaItem?.mediaId?.toLongOrNull()
+    }
 
     fun release() {
         controller?.release()
@@ -122,12 +172,18 @@ class PlayerController private constructor(private val context: Context) {
     }
 
     private fun Song.toMediaItem(): MediaItem {
+        val resolvedArtworkUri: Uri? = artworkUrl
+            ?.takeIf { it.isNotBlank() }
+            ?.let { Uri.parse(it) }
+            ?: albumArtUri
+
         val metadata = MediaMetadata.Builder()
             .setTitle(title)
             .setArtist(artist)
             .setAlbumTitle(album)
-            .setArtworkUri(albumArtUri)
+            .setArtworkUri(resolvedArtworkUri)
             .build()
+
         return MediaItem.Builder()
             .setMediaId(id.toString())
             .setUri(uri)
@@ -135,20 +191,25 @@ class PlayerController private constructor(private val context: Context) {
             .build()
     }
 
-data class PlaybackUiState(
-    val isPlaying: Boolean = false,
-    val title: String = "",
-    val artist: String = "",
-    val artworkUri: Uri? = null,
-    val hasItem: Boolean = false,
-    val currentSongId: Long? = null,   // ✅ AGGIUNTO
-)
+    data class PlaybackUiState(
+        val isPlaying: Boolean = false,
+        val title: String = "",
+        val artist: String = "",
+        val artworkUri: Uri? = null,
+        val hasItem: Boolean = false,
+        val currentSongId: Long? = null
+    )
 
     companion object {
-        @Volatile private var INSTANCE: PlayerController? = null
-        fun get(context: Context): PlayerController =
-            INSTANCE ?: synchronized(this) {
-                INSTANCE ?: PlayerController(context).also { INSTANCE = it }
+        @Volatile
+        private var INSTANCE: PlayerController? = null
+
+        fun get(context: Context): PlayerController {
+            return INSTANCE ?: synchronized(this) {
+                INSTANCE ?: PlayerController(context.applicationContext).also {
+                    INSTANCE = it
+                }
             }
+        }
     }
 }
