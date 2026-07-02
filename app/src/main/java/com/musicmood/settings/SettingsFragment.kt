@@ -1,341 +1,556 @@
 package com.musicmood.settings
 
+import android.content.Context
 import android.content.Intent
+import android.graphics.Typeface
 import android.net.Uri
 import android.os.Bundle
+import android.view.Gravity
+import android.view.View
+import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.Button
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.Spinner
+import android.widget.Switch
+import android.widget.TextView
 import android.widget.Toast
-import androidx.preference.ListPreference
-import androidx.preference.Preference
-import androidx.preference.PreferenceCategory
-import androidx.preference.PreferenceFragmentCompat
-import androidx.preference.SwitchPreferenceCompat
+import androidx.fragment.app.Fragment
 
-class SettingsFragment : PreferenceFragmentCompat() {
+class SettingsFragment : Fragment() {
 
-    override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
+    private val prefs by lazy {
+        requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    }
+
+    override fun onCreateView(
+        inflater: android.view.LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
         val ctx = requireContext()
-        val screen = preferenceManager.createPreferenceScreen(ctx)
 
-        val appearanceCategory = PreferenceCategory(ctx).apply {
-            title = "Aspetto"
+        val rootScroll = ScrollView(ctx).apply {
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+            )
+            fillViewport = true
         }
 
-        appearanceCategory.addPreference(
-            ListPreference(ctx).apply {
-                key = KEY_THEME_MODE
-                title = "Tema applicazione"
-                summary = "Scegli il tema dell'app"
-                entries = arrayOf("Sistema", "Chiaro", "Scuro")
-                entryValues = arrayOf("system", "light", "dark")
-                setDefaultValue("system")
-            }
-        )
-
-        appearanceCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_DYNAMIC_COLORS
-                title = "Colori dinamici"
-                summary = "Usa colori adattivi quando supportati dal dispositivo"
-                setDefaultValue(true)
-            }
-        )
-
-        appearanceCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_COMPACT_MODE
-                title = "Modalità compatta"
-                summary = "Riduce spaziature e dimensioni degli elementi nelle liste"
-                setDefaultValue(false)
-            }
-        )
-
-        screen.addPreference(appearanceCategory)
-
-        val libraryCategory = PreferenceCategory(ctx).apply {
-            title = "Libreria musicale"
+        val root = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(20), dp(20), dp(20), dp(32))
+            layoutParams = ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+            )
         }
 
-        libraryCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_SCAN_ON_START
-                title = "Scansione all'avvio"
-                summary = "Aggiorna automaticamente la libreria quando apri l'app"
-                setDefaultValue(false)
+        root.addView(header("Impostazioni"))
+        root.addView(description("Configura aspetto, libreria, mood engine, BubbleMap, copertine, player e dati locali."))
+
+        root.addView(sectionTitle("Aspetto"))
+        root.addView(
+            spinnerRow(
+                key = KEY_THEME_MODE,
+                title = "Tema applicazione",
+                subtitle = "Scegli il tema dell'app",
+                labels = listOf("Sistema", "Chiaro", "Scuro"),
+                values = listOf("system", "light", "dark"),
+                defaultValue = "system"
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_DYNAMIC_COLORS,
+                title = "Colori dinamici",
+                subtitle = "Usa colori adattivi quando supportati dal dispositivo",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_COMPACT_MODE,
+                title = "Modalità compatta",
+                subtitle = "Riduce spaziature e dimensioni degli elementi nelle liste",
+                defaultValue = false
+            )
+        )
+
+        root.addView(sectionTitle("Libreria musicale"))
+        root.addView(
+            switchRow(
+                key = KEY_SCAN_ON_START,
+                title = "Scansione all'avvio",
+                subtitle = "Aggiorna automaticamente la libreria quando apri l'app",
+                defaultValue = false
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_INCLUDE_SHORT_TRACKS,
+                title = "Includi tracce brevi",
+                subtitle = "Mostra anche intro, jingle e tracce di durata ridotta",
+                defaultValue = false
+            )
+        )
+        root.addView(
+            spinnerRow(
+                key = KEY_DEFAULT_SORT,
+                title = "Ordinamento predefinito",
+                subtitle = "Scegli come ordinare i brani nella libreria",
+                labels = listOf("Titolo", "Artista", "Album", "Durata", "Mood", "Anno"),
+                values = listOf("title", "artist", "album", "duration", "mood", "year"),
+                defaultValue = "title"
+            )
+        )
+
+        root.addView(sectionTitle("Mood engine"))
+        root.addView(
+            switchRow(
+                key = KEY_AUTO_ANALYZE,
+                title = "Analisi automatica mood",
+                subtitle = "Analizza i brani non ancora classificati",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_USE_USER_MOOD,
+                title = "Priorità mood manuale",
+                subtitle = "Usa il mood scelto manualmente al posto di quello calcolato",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            spinnerRow(
+                key = KEY_ANALYSIS_PROFILE,
+                title = "Profilo analisi",
+                subtitle = "Bilancia velocità e accuratezza dell'analisi",
+                labels = listOf("Veloce", "Bilanciato", "Accurato"),
+                values = listOf("fast", "balanced", "accurate"),
+                defaultValue = "balanced"
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_SHOW_CONFIDENCE,
+                title = "Mostra confidenza mood",
+                subtitle = "Visualizza il livello di affidabilità della classificazione",
+                defaultValue = true
+            )
+        )
+
+        root.addView(sectionTitle("BubbleMap"))
+        root.addView(
+            switchRow(
+                key = KEY_BUBBLEMAP_ENABLED,
+                title = "Abilita BubbleMap",
+                subtitle = "Mostra i brani nello spazio valenza/arousal",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_BUBBLEMAP_JITTER,
+                title = "Riduci sovrapposizione punti",
+                subtitle = "Applica un leggero spostamento visuale ai punti molto vicini",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_BUBBLEMAP_HEATMAP,
+                title = "Modalità densità",
+                subtitle = "Evidenzia aree con molti brani sovrapposti",
+                defaultValue = false
+            )
+        )
+        root.addView(
+            spinnerRow(
+                key = KEY_BUBBLEMAP_SIZE,
+                title = "Dimensione bolle",
+                subtitle = "Scegli la dimensione visuale dei punti",
+                labels = listOf("Piccola", "Media", "Grande"),
+                values = listOf("small", "medium", "large"),
+                defaultValue = "medium"
+            )
+        )
+
+        root.addView(sectionTitle("Copertine"))
+        root.addView(
+            switchRow(
+                key = KEY_REMOTE_ARTWORK,
+                title = "Ricerca copertine online",
+                subtitle = "Cerca copertine mancanti tramite sorgenti remote",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_ARTWORK_CACHE,
+                title = "Cache copertine",
+                subtitle = "Memorizza le copertine trovate per ridurre le ricerche successive",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            actionRow(
+                title = "Svuota cache copertine",
+                subtitle = "Rimuove la cache locale delle copertine",
+                buttonText = "Svuota"
+            ) {
+                Toast.makeText(
+                    requireContext(),
+                    "Cache copertine: funzione da collegare ad ArtworkRepository",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         )
 
-        libraryCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_INCLUDE_SHORT_TRACKS
-                title = "Includi tracce brevi"
-                summary = "Mostra anche intro, jingle e tracce di durata ridotta"
-                setDefaultValue(false)
+        root.addView(sectionTitle("Player"))
+        root.addView(
+            switchRow(
+                key = KEY_MINI_PLAYER,
+                title = "Mini-player persistente",
+                subtitle = "Mostra il mini-player quando un brano è in riproduzione",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_RESUME_PLAYBACK,
+                title = "Riprendi ultima riproduzione",
+                subtitle = "Mantiene il brano corrente e la posizione quando possibile",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            switchRow(
+                key = KEY_SHOW_ARTWORK_PLAYER,
+                title = "Mostra copertina nel player",
+                subtitle = "Visualizza la cover nel mini-player e nel player completo",
+                defaultValue = true
+            )
+        )
+
+        root.addView(sectionTitle("Privacy e dati"))
+        root.addView(
+            lockedSwitchRow(
+                key = KEY_LOCAL_ANALYSIS_ONLY,
+                title = "Analisi solo locale",
+                subtitle = "Esegue l'analisi audio sul dispositivo",
+                defaultValue = true
+            )
+        )
+        root.addView(
+            actionRow(
+                title = "Cancella dati analisi",
+                subtitle = "Rimuove mood, statistiche e report salvati localmente",
+                buttonText = "Cancella"
+            ) {
+                Toast.makeText(
+                    requireContext(),
+                    "Cancellazione dati analisi: funzione da collegare ai DAO Room",
+                    Toast.LENGTH_SHORT
+                ).show()
             }
         )
 
-        libraryCategory.addPreference(
-            ListPreference(ctx).apply {
-                key = KEY_DEFAULT_SORT
-                title = "Ordinamento predefinito"
-                summary = "Scegli come ordinare i brani nella libreria"
-                entries = arrayOf(
-                    "Titolo",
-                    "Artista",
-                    "Album",
-                    "Durata",
-                    "Mood",
-                    "Anno"
-                )
-                entryValues = arrayOf(
-                    "title",
-                    "artist",
-                    "album",
-                    "duration",
-                    "mood",
-                    "year"
-                )
-                setDefaultValue("title")
+        root.addView(sectionTitle("Info app"))
+        root.addView(
+            infoRow(
+                title = "README",
+                subtitle = readReadmeSummary()
+            ) {
+                openRepository()
             }
         )
+        root.addView(
+            infoRow(
+                title = "Versione app",
+                subtitle = getAppVersionLabel()
+            )
+        )
+        root.addView(
+            infoRow(
+                title = "Licenza",
+                subtitle = "MIT"
+            )
+        )
 
-        screen.addPreference(libraryCategory)
+        rootScroll.addView(root)
+        return rootScroll
+    }
 
-        val moodCategory = PreferenceCategory(ctx).apply {
-            title = "Mood engine"
+    private fun header(text: String): TextView {
+        return TextView(requireContext()).apply {
+            this.text = text
+            textSize = 26f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(0xFF222222.toInt())
+            setPadding(0, 0, 0, dp(8))
+        }
+    }
+
+    private fun description(text: String): TextView {
+        return TextView(requireContext()).apply {
+            this.text = text
+            textSize = 14f
+            setTextColor(0xFF666666.toInt())
+            setPadding(0, 0, 0, dp(18))
+        }
+    }
+
+    private fun sectionTitle(text: String): TextView {
+        return TextView(requireContext()).apply {
+            this.text = text
+            textSize = 18f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(0xFF333333.toInt())
+            setPadding(0, dp(18), 0, dp(8))
+        }
+    }
+
+    private fun switchRow(
+        key: String,
+        title: String,
+        subtitle: String,
+        defaultValue: Boolean
+    ): View {
+        val ctx = requireContext()
+
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(10), 0, dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
 
-        moodCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_AUTO_ANALYZE
-                title = "Analisi automatica mood"
-                summary = "Analizza i brani non ancora classificati"
-                setDefaultValue(true)
-            }
-        )
-
-        moodCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_USE_USER_MOOD
-                title = "Priorità mood manuale"
-                summary = "Usa il mood scelto manualmente al posto di quello calcolato"
-                setDefaultValue(true)
-            }
-        )
-
-        moodCategory.addPreference(
-            ListPreference(ctx).apply {
-                key = KEY_ANALYSIS_PROFILE
-                title = "Profilo analisi"
-                summary = "Bilancia velocità e accuratezza dell'analisi"
-                entries = arrayOf(
-                    "Veloce",
-                    "Bilanciato",
-                    "Accurato"
-                )
-                entryValues = arrayOf(
-                    "fast",
-                    "balanced",
-                    "accurate"
-                )
-                setDefaultValue("balanced")
-            }
-        )
-
-        moodCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_SHOW_CONFIDENCE
-                title = "Mostra confidenza mood"
-                summary = "Visualizza il livello di affidabilità della classificazione"
-                setDefaultValue(true)
-            }
-        )
-
-        screen.addPreference(moodCategory)
-
-        val bubbleMapCategory = PreferenceCategory(ctx).apply {
-            title = "BubbleMap"
+        val textContainer = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
         }
 
-        bubbleMapCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_BUBBLEMAP_ENABLED
-                title = "Abilita BubbleMap"
-                summary = "Mostra i brani nello spazio valenza/arousal"
-                setDefaultValue(true)
-            }
-        )
-
-        bubbleMapCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_BUBBLEMAP_JITTER
-                title = "Riduci sovrapposizione punti"
-                summary = "Applica un leggero spostamento visuale ai punti molto vicini"
-                setDefaultValue(true)
-            }
-        )
-
-        bubbleMapCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_BUBBLEMAP_HEATMAP
-                title = "Modalità densità"
-                summary = "Evidenzia aree con molti brani sovrapposti"
-                setDefaultValue(false)
-            }
-        )
-
-        bubbleMapCategory.addPreference(
-            ListPreference(ctx).apply {
-                key = KEY_BUBBLEMAP_SIZE
-                title = "Dimensione bolle"
-                summary = "Scegli la dimensione visuale dei punti"
-                entries = arrayOf("Piccola", "Media", "Grande")
-                entryValues = arrayOf("small", "medium", "large")
-                setDefaultValue("medium")
-            }
-        )
-
-        screen.addPreference(bubbleMapCategory)
-
-        val artworkCategory = PreferenceCategory(ctx).apply {
-            title = "Copertine"
+        val titleView = TextView(ctx).apply {
+            text = title
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(0xFF222222.toInt())
         }
 
-        artworkCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_REMOTE_ARTWORK
-                title = "Ricerca copertine online"
-                summary = "Cerca copertine mancanti tramite sorgenti remote"
-                setDefaultValue(true)
-            }
-        )
+        val subtitleView = TextView(ctx).apply {
+            text = subtitle
+            textSize = 13f
+            setTextColor(0xFF777777.toInt())
+            setPadding(0, dp(3), dp(12), 0)
+        }
 
-        artworkCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_ARTWORK_CACHE
-                title = "Cache copertine"
-                summary = "Memorizza le copertine trovate per ridurre le ricerche successive"
-                setDefaultValue(true)
+        val switchView = Switch(ctx).apply {
+            isChecked = prefs.getBoolean(key, defaultValue)
+            setOnCheckedChangeListener { _, checked ->
+                prefs.edit().putBoolean(key, checked).apply()
             }
-        )
+        }
 
-        artworkCategory.addPreference(
-            Preference(ctx).apply {
-                key = KEY_CLEAR_ARTWORK_CACHE
-                title = "Svuota cache copertine"
-                summary = "Rimuove la cache locale delle copertine"
-                setOnPreferenceClickListener {
-                    Toast.makeText(
-                        requireContext(),
-                        "Cache copertine: funzione da collegare al repository",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    true
+        textContainer.addView(titleView)
+        textContainer.addView(subtitleView)
+
+        row.addView(textContainer)
+        row.addView(switchView)
+
+        return row
+    }
+
+    private fun lockedSwitchRow(
+        key: String,
+        title: String,
+        subtitle: String,
+        defaultValue: Boolean
+    ): View {
+        val view = switchRow(key, title, subtitle, defaultValue)
+        view.isEnabled = false
+        view.alpha = 0.65f
+        return view
+    }
+
+    private fun spinnerRow(
+        key: String,
+        title: String,
+        subtitle: String,
+        labels: List<String>,
+        values: List<String>,
+        defaultValue: String
+    ): View {
+        val ctx = requireContext()
+        val currentValue = prefs.getString(key, defaultValue) ?: defaultValue
+
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(10), 0, dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        val titleView = TextView(ctx).apply {
+            text = title
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(0xFF222222.toInt())
+        }
+
+        val subtitleView = TextView(ctx).apply {
+            text = subtitle
+            textSize = 13f
+            setTextColor(0xFF777777.toInt())
+            setPadding(0, dp(3), 0, dp(8))
+        }
+
+        val spinner = Spinner(ctx).apply {
+            adapter = ArrayAdapter(
+                ctx,
+                android.R.layout.simple_spinner_dropdown_item,
+                labels
+            )
+
+            val selectedIndex = values.indexOf(currentValue).takeIf { it >= 0 } ?: 0
+            setSelection(selectedIndex)
+
+            onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>?,
+                    view: View?,
+                    position: Int,
+                    id: Long
+                ) {
+                    val selectedValue = values.getOrNull(position) ?: defaultValue
+                    prefs.edit().putString(key, selectedValue).apply()
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>?) {
+                    // No action required.
                 }
             }
-        )
-
-        screen.addPreference(artworkCategory)
-
-        val playerCategory = PreferenceCategory(ctx).apply {
-            title = "Player"
         }
 
-        playerCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_MINI_PLAYER
-                title = "Mini-player persistente"
-                summary = "Mostra il mini-player quando un brano è in riproduzione"
-                setDefaultValue(true)
-            }
-        )
+        row.addView(titleView)
+        row.addView(subtitleView)
+        row.addView(spinner)
 
-        playerCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_RESUME_PLAYBACK
-                title = "Riprendi ultima riproduzione"
-                summary = "Mantiene il brano corrente e la posizione quando possibile"
-                setDefaultValue(true)
-            }
-        )
+        return row
+    }
 
-        playerCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_SHOW_ARTWORK_PLAYER
-                title = "Mostra copertina nel player"
-                summary = "Visualizza la cover nel mini-player e nel player completo"
-                setDefaultValue(true)
-            }
-        )
+    private fun actionRow(
+        title: String,
+        subtitle: String,
+        buttonText: String,
+        action: () -> Unit
+    ): View {
+        val ctx = requireContext()
 
-        screen.addPreference(playerCategory)
-
-        val privacyCategory = PreferenceCategory(ctx).apply {
-            title = "Privacy e dati"
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.HORIZONTAL
+            gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(10), 0, dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
         }
 
-        privacyCategory.addPreference(
-            SwitchPreferenceCompat(ctx).apply {
-                key = KEY_LOCAL_ANALYSIS_ONLY
-                title = "Analisi solo locale"
-                summary = "Esegue l'analisi audio sul dispositivo"
-                setDefaultValue(true)
-                isEnabled = false
-            }
-        )
+        val textContainer = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                0,
+                LinearLayout.LayoutParams.WRAP_CONTENT,
+                1f
+            )
+        }
 
-        privacyCategory.addPreference(
-            Preference(ctx).apply {
-                key = KEY_CLEAR_ANALYSIS_DATA
-                title = "Cancella dati analisi"
-                summary = "Rimuove mood, statistiche e report salvati localmente"
-                setOnPreferenceClickListener {
-                    Toast.makeText(
-                        requireContext(),
-                        "Cancellazione dati analisi: funzione da collegare ai DAO Room",
-                        Toast.LENGTH_SHORT
-                    ).show()
-                    true
+        val titleView = TextView(ctx).apply {
+            text = title
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(0xFF222222.toInt())
+        }
+
+        val subtitleView = TextView(ctx).apply {
+            text = subtitle
+            textSize = 13f
+            setTextColor(0xFF777777.toInt())
+            setPadding(0, dp(3), dp(12), 0)
+        }
+
+        val button = Button(ctx).apply {
+            text = buttonText
+            setOnClickListener {
+                action()
+            }
+        }
+
+        textContainer.addView(titleView)
+        textContainer.addView(subtitleView)
+
+        row.addView(textContainer)
+        row.addView(button)
+
+        return row
+    }
+
+    private fun infoRow(
+        title: String,
+        subtitle: String,
+        action: (() -> Unit)? = null
+    ): View {
+        val ctx = requireContext()
+
+        val row = LinearLayout(ctx).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(0, dp(10), 0, dp(10))
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+
+            if (action != null) {
+                isClickable = true
+                isFocusable = true
+                setOnClickListener {
+                    action()
                 }
             }
-        )
-
-        screen.addPreference(privacyCategory)
-
-        val infoCategory = PreferenceCategory(ctx).apply {
-            title = "Info app"
         }
 
-        infoCategory.addPreference(
-            Preference(ctx).apply {
-                key = KEY_README
-                title = "README"
-                summary = readReadmeSummary()
-                setOnPreferenceClickListener {
-                    openRepository()
-                    true
-                }
-            }
-        )
+        val titleView = TextView(ctx).apply {
+            text = title
+            textSize = 15f
+            typeface = Typeface.DEFAULT_BOLD
+            setTextColor(0xFF222222.toInt())
+        }
 
-        infoCategory.addPreference(
-            Preference(ctx).apply {
-                key = KEY_APP_VERSION
-                title = "Versione app"
-                summary = getAppVersionLabel()
-            }
-        )
+        val subtitleView = TextView(ctx).apply {
+            text = subtitle
+            textSize = 13f
+            setTextColor(0xFF777777.toInt())
+            setPadding(0, dp(3), 0, 0)
+        }
 
-        infoCategory.addPreference(
-            Preference(ctx).apply {
-                key = KEY_LICENSE
-                title = "Licenza"
-                summary = "MIT"
-            }
-        )
+        row.addView(titleView)
+        row.addView(subtitleView)
 
-        screen.addPreference(infoCategory)
-
-        preferenceScreen = screen
+        return row
     }
 
     private fun readReadmeSummary(): String {
@@ -389,7 +604,13 @@ class SettingsFragment : PreferenceFragmentCompat() {
         }
     }
 
+    private fun dp(value: Int): Int {
+        return (value * resources.displayMetrics.density).toInt()
+    }
+
     companion object {
+        private const val PREFS_NAME = "music_mood_settings"
+
         private const val REPOSITORY_URL =
             "https://github.com/lucatrombetta090-sys/Music-Mood-v5"
 
