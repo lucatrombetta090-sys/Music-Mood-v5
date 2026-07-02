@@ -4,6 +4,7 @@ import android.graphics.Typeface
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ScrollView
@@ -11,12 +12,11 @@ import android.widget.TextView
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import androidx.fragment.app.Fragment
-import com.musicmood.R
 
 class AboutFragment : Fragment() {
 
     override fun onCreateView(
-        inflater: android.view.LayoutInflater,
+        inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
@@ -37,7 +37,7 @@ class AboutFragment : Fragment() {
             )
 
             textSize = 15f
-            lineSpacing = dp(4).toFloat(), 1.05f
+            setLineSpacing(dp(4).toFloat(), 1.05f)
             gravity = Gravity.START
             movementMethod = LinkMovementMethod.getInstance()
 
@@ -89,10 +89,22 @@ class AboutFragment : Fragment() {
             .replace(">", "&gt;")
 
         val html = escaped
-            .replace(Regex("^# (.*)$", RegexOption.MULTILINE), "<h1>$1</h1>")
-            .replace(Regex("^## (.*)$", RegexOption.MULTILINE), "<h2>$1</h2>")
-            .replace(Regex("^### (.*)$", RegexOption.MULTILINE), "<h3>$1</h3>")
-            .replace(Regex("^\\- (.*)$", RegexOption.MULTILINE), "• $1")
+            .replace(
+                Regex("^# (.*)$", RegexOption.MULTILINE),
+                "<h1>$1</h1>"
+            )
+            .replace(
+                Regex("^## (.*)$", RegexOption.MULTILINE),
+                "<h2>$1</h2>"
+            )
+            .replace(
+                Regex("^### (.*)$", RegexOption.MULTILINE),
+                "<h3>$1</h3>"
+            )
+            .replace(
+                Regex("^- (.*)$", RegexOption.MULTILINE),
+                "• $1"
+            )
             .replace("\n", "<br>")
 
         return HtmlCompat.fromHtml(
